@@ -198,6 +198,9 @@ class WatchableRef<T> extends WatchableBase<void> {
     get ref() {
         return this[watchable_ref];
     }
+    get $ref() {
+        return watch([this], () => this[watchable_ref]);
+    }
     set ref(nv: T) {
         this[watchable_ref] = nv;
         this[watchable_watchers].map(watcher => watcher());
@@ -314,14 +317,34 @@ let model = d(
 
 type RealOrWatchable<T> = T | Watchable<T>;
 
+document.createElement("div").onclick;
+
+// type OptionalProps<T> = { [key in keyof T]?: T[key] };
+//
+// declare global {
+//     namespace JSX {
+//         interface IntrinsicElements {
+//             [elemName: string]: OptionalProps<GlobalEventHandlers> & {
+//                 children?: ComponentModel[] | ComponentModel;
+//             };
+//         }
+//         interface Element extends ExistingComponentModel {}
+//     }
+// }
+
+type OptionalProps<T> = { [key in keyof T]?: RealOrWatchable<T[key]> };
+
+type TagNameToPropsMap = {
+    [elemName in keyof HTMLElementTagNameMap]: OptionalProps<
+        HTMLElementTagNameMap[elemName] & {
+            children: ComponentModel[] | ComponentModel;
+        }
+    >;
+};
+
 declare global {
     namespace JSX {
-        interface IntrinsicElements {
-            [elemName: string]: {
-                onclick?: RealOrWatchable<() => void>;
-                children?: ComponentModel[] | ComponentModel;
-            };
-        }
+        interface IntrinsicElements extends TagNameToPropsMap {}
         interface Element extends ExistingComponentModel {}
     }
 }
@@ -365,6 +388,19 @@ let modelJSX = (
     </div>
 );
 
+let inputValue = new WatchableRef("");
+let managedInput = (
+    <div>
+        <input
+            value={inputValue.$ref}
+            oninput={e =>
+                (inputValue.ref = (e.currentTarget as HTMLInputElement).value)
+            }
+        />
+        {inputValue.$ref}
+    </div>
+);
+
 // let Toggleable = component();
 //
 // let toggleableTestModel = (
@@ -390,6 +426,7 @@ let modelJSX = (
 
 document.body.appendChild(model.node);
 document.body.appendChild(modelJSX.node);
+document.body.appendChild(managedInput.node);
 document.body.appendChild(
     (
         <button onclick={() => console.log(watchableCount, contentIsShowing)}>
