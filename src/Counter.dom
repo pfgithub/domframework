@@ -1,0 +1,4 @@
+<Counter>
+	{counter.value.ref.toString()} /* watch(() => , counter.value) */
+	<button onClick=#click>++</button>
+</Counter>

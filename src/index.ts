@@ -1,0 +1,183 @@
+console.log("It works!");
+
+export const watchable_watchers = Symbol("watchers");
+export const watchable_watch = Symbol("watch");
+
+// note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
+
+interface Watchable<T> {
+    [watchable_watch](v: (v: T) => void): void;
+}
+
+interface WatchableComponent {
+    [watchable_watch](v: (v: ComponentModel) => void): void;
+}
+
+/*
+
+let counter = Component([d.div("$$props.count")])
+
+document.body.appendChild(counter.node());
+
+model::
+
+<div>
+<button #click></button>
+</div>
+
+*/
+
+type WrapWatchable<T> = T extends number | string | symbol | boolean
+    ? WatchableRef<T>
+    : T extends Watchable<any>
+    ? T
+    : { [key in keyof T]: WrapWatchable<T[key]> };
+
+type ComponentModel =
+    | { node: ChildNode /*[]*/ /*, removeSelf (removes all watchers)*/ }
+    | WatchableComponent;
+
+function isWatchable<T>(v: ComponentModel): v is WatchableComponent {
+    return watchable_watch in v;
+}
+
+function createComponent(
+    c: ComponentModel,
+    parent: ChildNode
+): { finalNode: Node; removeSelf: () => void } {
+    if (isWatchable(c)) {
+        let finalNode = document.createTextNode(""); // nodes are inserted before this node
+        parent.appendChild(finalNode);
+        let removalFunctions: (() => void)[] = [];
+        c[watchable_watch](model => {
+            // clear outdated nodes
+            removalFunctions.map(rf => rf());
+            removalFunctions = [];
+            // create new nodes
+            let { removeSelf } = createComponent(model, parent);
+            removalFunctions.push(removeSelf);
+        });
+        return {
+            finalNode,
+            removeSelf: () => {
+                finalNode.remove();
+                removalFunctions.map(rf => rf());
+            }
+        };
+    }
+    parent.appendChild(c.node);
+    return { finalNode: c.node, removeSelf: () => c.node.remove() };
+}
+
+const d = (
+    componentName: string,
+    props: {
+        [key: string]:
+            | string
+            | number
+            | ((...a: any[]) => void)
+            | Watchable<string | number | ((...a: any[]) => void)>;
+    },
+    ...children: ComponentModel[]
+): ComponentModel => {
+    let element = document.createElement(componentName);
+    Object.keys(props).map(prop => {
+        let a: any = props[prop];
+        if (a[watchable_watch]) {
+            a[watchable_watch]((v: any) => {
+                (element as any)[prop] = v;
+            });
+            return;
+        }
+        (element as any)[prop] = a;
+    });
+    children.map(c => {
+        createComponent(c, element);
+    });
+    return { node: element };
+    // children:map child addChild(...)
+    // props:map prop // find watch() functions (these can change props based on values changing)
+    // bind value changes to watch
+};
+
+// type RealOrWatchable<T> = T | Watchable<T>;
+
+class WatchableBase<T> implements Watchable<T> {
+    [watchable_watchers]: ((v: T) => void)[] = [];
+    [watchable_watch](watcher: (v: T) => void): void {
+        this[watchable_watchers].push(watcher);
+    }
+}
+
+class WatchableDependencyList<T> extends WatchableBase<T> {
+    constructor(data: Watchable<any>[], cb: () => T) {
+        super();
+        data.map(dataToWatch => {
+            dataToWatch[watchable_watch](() => {
+                let valueToReturn = cb();
+                this[watchable_watchers].map(watcher => watcher(valueToReturn));
+            });
+        });
+    }
+}
+
+class WatchableRef<T> extends WatchableBase<void> {
+    private __ref: T;
+    constructor(data: T) {
+        super();
+        this.__ref = data;
+    }
+    get ref() {
+        return this.__ref;
+    }
+    set ref(nv: T) {
+        this.__ref = nv;
+        this[watchable_watchers].map(watcher => watcher());
+    }
+}
+
+function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
+    return new WatchableDependencyList(data, cb);
+}
+
+// function Component<DataType>(
+//     componentfn: (data: WrapWatchable<DataType>) => ComponentModel
+// ) {
+//     return (data: WrapWatchable<DataType>) => {
+//         // only called when a component is initialized
+//         let model = componentfn(data);
+//         return undefined;
+//     };
+// }
+//
+// let counter = Component<{ count: number }>(data =>
+//     d(
+//         "div",
+//         {
+//             onclick: (e: any) => {
+//                 data.count.ref++;
+//             }
+//         },
+//         watch<ComponentModel>([data.count], () => ({
+//             node: document.createTextNode("" + data.count.ref)
+//         }))
+//     )
+// );
+
+let watchableCount = new WatchableRef(25);
+
+let model = d(
+    "button",
+    {
+        onclick: (e: any) => {
+            watchableCount.ref++;
+        }
+    },
+    watch<ComponentModel>([watchableCount], () => ({
+        node: document.createTextNode("Value: " + watchableCount.ref)
+    }))
+);
+
+document.body.appendChild((model as any).node);
+
+// let counter = Component<{ count: number }>(data => d.div(data.count));
