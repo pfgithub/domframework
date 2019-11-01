@@ -66,12 +66,13 @@ function createComponent(
             let { removeSelf } = createComponent(model, parent);
             removalFunctions.push(removeSelf);
         };
-        c[watchable_watch](updateValue);
+        let unwatch = c[watchable_watch](updateValue);
         let currentModel = c[watchable_value]();
         updateValue(currentModel);
         return {
             finalNode,
             removeSelf: () => {
+                unwatch();
                 finalNode.remove();
                 removalFunctions.map(rf => rf());
             }
