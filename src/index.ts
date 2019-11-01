@@ -9,7 +9,7 @@ export const watchable_cb = Symbol("cb");
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
 interface Watchable<T> {
-    [watchable_watch](v: (v: T) => void): void;
+    [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
     [watchable_value](): T;
 }
 
@@ -36,11 +36,11 @@ type WrapWatchable<T> = T extends number | string | symbol | boolean
     : { [key in keyof T]: WrapWatchable<T[key]> };
 
 type ComponentModel =
-    | { node: ChildNode /*[]*/ /*, removeSelf (removes all watchers)*/ }
+    | { node: ChildNode /*[]*/; removeSelf: () => void }
     | WatchableComponent;
 
-function isWatchable<T>(v: ComponentModel): v is WatchableComponent {
-    return watchable_watch in v;
+function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
+    return !!(v as any)[watchable_watch];
 }
 
 function createComponent(
@@ -86,12 +86,15 @@ const d = (
     ...children: ComponentModel[]
 ): ComponentModel => {
     let element = document.createElement(componentName);
+    let removalHandlers: (() => void)[] = [];
     Object.keys(props).map(prop => {
         let a: any = props[prop];
         if (a[watchable_watch]) {
-            a[watchable_watch]((v: any) => {
-                (element as any)[prop] = v;
-            });
+            removalHandlers.push(
+                a[watchable_watch]((v: any) => {
+                    (element as any)[prop] = v;
+                })
+            );
             let current = a[watchable_value]();
             (element as any)[prop] = current;
             return;
@@ -99,9 +102,12 @@ const d = (
         (element as any)[prop] = a;
     });
     children.map(c => {
-        createComponent(c, element);
+        removalHandlers.push(createComponent(c, element).removeSelf);
     });
-    return { node: element };
+    return {
+        node: element,
+        removeSelf: () => removalHandlers.forEach(h => h())
+    };
     // children:map child addChild(...)
     // props:map prop // find watch() functions (these can change props based on values changing)
     // bind value changes to watch
@@ -111,8 +117,12 @@ const d = (
 
 abstract class WatchableBase<T> implements Watchable<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
-    [watchable_watch](watcher: (v: T) => void): void {
+    [watchable_watch](watcher: (v: T) => void): () => void {
         this[watchable_watchers].push(watcher);
+        return () =>
+            (this[watchable_watchers] = this[watchable_watchers].filter(
+                e => e === watcher
+            ));
     }
     abstract [watchable_value](): T;
 }
@@ -181,6 +191,25 @@ function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
 //     )
 // );
 
+function textNode(v: string | Watchable<string>): ComponentModel {
+    let textValue = isWatchable(v) ? v[watchable_value]() : v;
+    let node = document.createTextNode(textValue);
+    let removalHandlers: (() => void)[] = [];
+    if (isWatchable(v)) {
+        removalHandlers.push(
+            v[watchable_watch](nv => {
+                node.nodeValue = nv;
+            })
+        );
+    }
+    return {
+        node,
+        removeSelf: () => {
+            removalHandlers.map(h => h());
+        }
+    };
+}
+
 let watchableCount = new WatchableRef(25);
 
 let model = d(
@@ -190,9 +219,13 @@ let model = d(
             watchableCount.ref++;
         }
     },
-    watch<ComponentModel>([watchableCount], () => ({
-        node: document.createTextNode("Value: " + watchableCount.ref)
-    }))
+    textNode(
+        watch<string>([watchableCount], () => "Value: " + watchableCount.ref)
+    )
+    /*
+    watch<ComponentModel>([watchableCount], () =>
+        textNode("Value: " + watchableCount.ref)
+    )*/
 );
 
 document.body.appendChild((model as any).node);
