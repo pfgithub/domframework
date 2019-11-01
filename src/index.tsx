@@ -1,6 +1,3 @@
-/** @jsx d */
-/** @jsxFrag fragment */
-
 console.log("It works!");
 
 export const watchable_watchers = Symbol("watchers");
@@ -309,6 +306,22 @@ let model = d(
     )
 );
 
+type RealOrWatchable<T> = T | Watchable<T>;
+
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            [elemName: string]: {
+                onclick?: RealOrWatchable<() => void>;
+                children?: ComponentModel[] | ComponentModel;
+            };
+        }
+        interface Element extends ExistingComponentModel {}
+    }
+}
+
+let React = { createElement: d };
+
 let modelJSX = (
     <div>
         <button onclick={() => (contentIsShowing.ref = !contentIsShowing.ref)}>
@@ -367,7 +380,7 @@ let modelJSX = (
 //     )*/
 // );
 
-document.body.appendChild((model as any).node);
-document.body.appendChild((modelJSX as any).node);
+document.body.appendChild(model.node);
+document.body.appendChild(modelJSX.node);
 
 // let counter = Component<{ count: number }>(data => d.div(data.count));

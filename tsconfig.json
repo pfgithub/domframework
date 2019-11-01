@@ -10,7 +10,7 @@
         "resolveJsonModule": true,
         "declaration": true,
         "strict": true,
-        "jsx": true
+        "jsx": "preserve"
     },
     "include": ["src/**/*", "bin/**/*", "test/**/*", "index.ts"]
 }
