@@ -35,9 +35,11 @@ type WrapWatchable<T> = T extends number | string | symbol | boolean
     ? T
     : { [key in keyof T]: WrapWatchable<T[key]> };
 
-type ComponentModel =
-    | { node: ChildNode /*[]*/; removeSelf: () => void }
-    | WatchableComponent;
+type ExistingComponentModel = {
+    node: ChildNode /*[]*/;
+    removeSelf: () => void;
+};
+type ComponentModel = ExistingComponentModel | WatchableComponent;
 
 function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
     return !!(v as any)[watchable_watch];
@@ -71,7 +73,13 @@ function createComponent(
         };
     }
     parent.appendChild(c.node);
-    return { finalNode: c.node, removeSelf: () => c.node.remove() };
+    return {
+        finalNode: c.node,
+        removeSelf: () => {
+            c.node.remove();
+            c.removeSelf();
+        }
+    };
 }
 
 const d = (
@@ -84,7 +92,7 @@ const d = (
             | Watchable<string | number | ((...a: any[]) => void)>;
     },
     ...children: ComponentModel[]
-): ComponentModel => {
+): ExistingComponentModel => {
     let element = document.createElement(componentName);
     let removalHandlers: (() => void)[] = [];
     Object.keys(props).map(prop => {
@@ -115,16 +123,25 @@ const d = (
 
 // type RealOrWatchable<T> = T | Watchable<T>;
 
+const watchable_cleanup = Symbol("cleanup");
+
 abstract class WatchableBase<T> implements Watchable<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
     [watchable_watch](watcher: (v: T) => void): () => void {
         this[watchable_watchers].push(watcher);
-        return () =>
-            (this[watchable_watchers] = this[watchable_watchers].filter(
-                e => e === watcher
-            ));
+        return () => {
+            console.log("removing self", this[watchable_watchers], watcher);
+            this[watchable_watchers] = this[watchable_watchers].filter(
+                e => e !== watcher
+            );
+            if (this[watchable_watchers].length === 0) {
+                this[watchable_cleanup](); // maybe have a watchable setup for if someone runs watch on a cleaned watcher
+            }
+            console.log("done", this[watchable_watchers], watcher);
+        };
     }
     abstract [watchable_value](): T;
+    abstract [watchable_cleanup](): T;
 }
 
 class WatchableDependencyList<T> extends WatchableBase<T> {
@@ -133,15 +150,21 @@ class WatchableDependencyList<T> extends WatchableBase<T> {
         super();
         this[watchable_cb] = cb;
         data.map(dataToWatch => {
-            dataToWatch[watchable_watch](() => {
+            let watcher = dataToWatch[watchable_watch](() => {
                 // when any data changes
                 let valueToReturn = cb(); // get our own value
                 this[watchable_watchers].map(watcher => watcher(valueToReturn)); // emit our value
             });
+            // !! REMOVE WATCHER <--------
+            // this needs to be done when ...?
+            // when we run out of watchers? maybe
         });
     }
     [watchable_value]() {
         return this[watchable_cb]();
+    }
+    [watchable_cleanup]() {
+        this[watchable_cleanupfns].map(cfn => cfn());
     }
 }
 
@@ -191,7 +214,7 @@ function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
 //     )
 // );
 
-function textNode(v: string | Watchable<string>): ComponentModel {
+function textNode(v: string | Watchable<string>): ExistingComponentModel {
     let textValue = isWatchable(v) ? v[watchable_value]() : v;
     let node = document.createTextNode(textValue);
     let removalHandlers: (() => void)[] = [];
@@ -205,6 +228,7 @@ function textNode(v: string | Watchable<string>): ComponentModel {
     return {
         node,
         removeSelf: () => {
+            console.log("removing", removalHandlers);
             removalHandlers.map(h => h());
         }
     };
@@ -213,20 +237,44 @@ function textNode(v: string | Watchable<string>): ComponentModel {
 let watchableCount = new WatchableRef(25);
 
 let model = d(
-    "button",
-    {
-        onclick: (e: any) => {
-            watchableCount.ref++;
-        }
-    },
-    textNode(
-        watch<string>([watchableCount], () => "Value: " + watchableCount.ref)
+    "div",
+    {},
+    d(
+        "span",
+        {},
+        textNode("Count: "),
+        textNode(watch([watchableCount], () => "" + watchableCount.ref)),
+        textNode(" ")
+    ),
+    textNode(watch([watchableCount], () => "" + watchableCount.ref)),
+    d("button", { onclick: () => watchableCount.ref++ }, textNode("++")),
+    d(
+        "button",
+        {
+            onclick: () => {
+                console.log(watchableCount);
+                model.removeSelf();
+                console.log(watchableCount);
+            }
+        },
+        textNode("removeSelf")
     )
-    /*
-    watch<ComponentModel>([watchableCount], () =>
-        textNode("Value: " + watchableCount.ref)
-    )*/
 );
+
+// let model = d(
+//     "button",
+//     {
+//         onclick: (e: any) => {
+//             watchableCount.ref++;
+//         }
+//     },
+//     textNode("Value: "),
+//     textNode(watch<string>([watchableCount], () => "" + watchableCount.ref))
+//     /*
+//     watch<ComponentModel>([watchableCount], () =>
+//         textNode("Value: " + watchableCount.ref)
+//     )*/
+// );
 
 document.body.appendChild((model as any).node);
 
