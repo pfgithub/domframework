@@ -332,6 +332,9 @@ let modelJSX = (
             )}
         </button>
         {watch([contentIsShowing], () =>
+            // !!!!!! this watch needs to be removed !!!!!!
+            // for some  reason, after removing all the components,
+            // reshowing runs this again
             contentIsShowing.ref ? (
                 <div>
                     <span>
@@ -364,6 +367,14 @@ let modelJSX = (
         )}
     </div>
 );
+
+// let Toggleable = component();
+//
+// let toggleableTestModel = (
+//     <Toggleable>
+//         <div>visible</div>
+//     </Toggleable>
+// );
 
 // let model = d(
 //     "button",
