@@ -39,7 +39,7 @@ type ExistingComponentModel = {
     node: ChildNode /*[]*/;
     removeSelf: () => void;
 };
-type ComponentModel = ExistingComponentModel | WatchableComponent;
+type ComponentModel = ExistingComponentModel | string | WatchableComponent;
 
 function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
     return !!(v as any)[watchable_watch];
@@ -49,6 +49,11 @@ function createComponent(
     c: ComponentModel,
     parent: ChildNode
 ): { finalNode: Node; removeSelf: () => void } {
+    if (typeof c === "string") {
+        let textNode = document.createTextNode(c);
+        parent.appendChild(textNode);
+        return { finalNode: textNode, removeSelf: () => textNode.remove() };
+    }
     if (isWatchable(c)) {
         let finalNode = document.createTextNode(""); // nodes are inserted before this node
         parent.appendChild(finalNode);
@@ -325,10 +330,8 @@ let React = { createElement: d };
 let modelJSX = (
     <div>
         <button onclick={() => (contentIsShowing.ref = !contentIsShowing.ref)}>
-            {textNode(
-                watch([contentIsShowing], () =>
-                    contentIsShowing.ref ? "Hide" : "Show"
-                )
+            {watch([contentIsShowing], () =>
+                contentIsShowing.ref ? "Hide" : "Show"
             )}
         </button>
         {watch([contentIsShowing], () =>
@@ -338,27 +341,20 @@ let modelJSX = (
             contentIsShowing.ref ? (
                 <div>
                     <span>
-                        {textNode("Count: ")}
-                        {textNode(
-                            watch(
-                                [watchableCount],
-                                () => "" + watchableCount.ref
-                            )
-                        )}
+                        Count:{" "}
+                        {watch([watchableCount], () => "" + watchableCount.ref)}
                     </span>
                     {textNode(" ")}
                     {textNode(
                         watch([watchableCount], () => "" + watchableCount.ref)
                     )}
-                    <button onclick={() => watchableCount.ref++}>
-                        {textNode("++")}
-                    </button>
+                    <button onclick={() => watchableCount.ref++}>++</button>
                     <button
                         onclick={() => {
                             model.removeSelf();
                         }}
                     >
-                        {textNode("removeSelf")}
+                        removeSelf
                     </button>
                 </div>
             ) : (
@@ -393,5 +389,12 @@ let modelJSX = (
 
 document.body.appendChild(model.node);
 document.body.appendChild(modelJSX.node);
+document.body.appendChild(
+    (
+        <button onclick={() => console.log(watchableCount, contentIsShowing)}>
+            log
+        </button>
+    ).node
+);
 
 // let counter = Component<{ count: number }>(data => d.div(data.count));
