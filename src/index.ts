@@ -250,29 +250,57 @@ function textNode(v: string | Watchable<string>): ExistingComponentModel {
 }
 
 let watchableCount = new WatchableRef(25);
+let contentIsShowing = new WatchableRef(false);
 
 let model = d(
     "div",
     {},
     d(
-        "span",
-        {},
-        textNode("Count: "),
-        textNode(watch([watchableCount], () => "" + watchableCount.ref)),
-        textNode(" ")
-    ),
-    textNode(watch([watchableCount], () => "" + watchableCount.ref)),
-    d("button", { onclick: () => watchableCount.ref++ }, textNode("++")),
-    d(
         "button",
         {
-            onclick: () => {
-                console.log(watchableCount);
-                model.removeSelf();
-                console.log(watchableCount);
-            }
+            onclick: () => (contentIsShowing.ref = !contentIsShowing.ref)
         },
-        textNode("removeSelf")
+        textNode(
+            watch([contentIsShowing], () =>
+                contentIsShowing.ref ? "Hide" : "Show"
+            )
+        )
+    ),
+    watch([contentIsShowing], () =>
+        contentIsShowing.ref
+            ? d(
+                  "div",
+                  {},
+                  d(
+                      "span",
+                      {},
+                      textNode("Count: "),
+                      textNode(
+                          watch([watchableCount], () => "" + watchableCount.ref)
+                      ),
+                      textNode(" ")
+                  ),
+                  textNode(
+                      watch([watchableCount], () => "" + watchableCount.ref)
+                  ),
+                  d(
+                      "button",
+                      { onclick: () => watchableCount.ref++ },
+                      textNode("++")
+                  ),
+                  d(
+                      "button",
+                      {
+                          onclick: () => {
+                              console.log(watchableCount);
+                              model.removeSelf();
+                              console.log(watchableCount);
+                          }
+                      },
+                      textNode("removeSelf")
+                  )
+              )
+            : d("div", {})
     )
 );
 
