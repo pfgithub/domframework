@@ -123,11 +123,17 @@ const d = (
 
 // type RealOrWatchable<T> = T | Watchable<T>;
 
+const watchable_setup = Symbol("setup");
 const watchable_cleanup = Symbol("cleanup");
+const watchable_cleanupfns = Symbol("cleanupfns");
+const watchable_data = Symbol("data");
 
 abstract class WatchableBase<T> implements Watchable<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
     [watchable_watch](watcher: (v: T) => void): () => void {
+        if (this[watchable_watchers].length === 0) {
+            this[watchable_setup]();
+        }
         this[watchable_watchers].push(watcher);
         return () => {
             console.log("removing self", this[watchable_watchers], watcher);
@@ -135,33 +141,40 @@ abstract class WatchableBase<T> implements Watchable<T> {
                 e => e !== watcher
             );
             if (this[watchable_watchers].length === 0) {
-                this[watchable_cleanup](); // maybe have a watchable setup for if someone runs watch on a cleaned watcher
+                this[watchable_cleanup]();
             }
             console.log("done", this[watchable_watchers], watcher);
         };
     }
     abstract [watchable_value](): T;
-    abstract [watchable_cleanup](): T;
+    abstract [watchable_setup](): void;
+    abstract [watchable_cleanup](): void;
 }
 
 class WatchableDependencyList<T> extends WatchableBase<T> {
     private [watchable_cb]: () => T;
+    private [watchable_data]: Watchable<any>[];
+    private [watchable_cleanupfns]: (() => void)[] = [];
     constructor(data: Watchable<any>[], cb: () => T) {
         super();
         this[watchable_cb] = cb;
-        data.map(dataToWatch => {
-            let watcher = dataToWatch[watchable_watch](() => {
-                // when any data changes
-                let valueToReturn = cb(); // get our own value
-                this[watchable_watchers].map(watcher => watcher(valueToReturn)); // emit our value
-            });
-            // !! REMOVE WATCHER <--------
-            // this needs to be done when ...?
-            // when we run out of watchers? maybe
-        });
+        this[watchable_data] = data;
     }
     [watchable_value]() {
         return this[watchable_cb]();
+    }
+    [watchable_setup]() {
+        this[watchable_data].map(dataToWatch => {
+            this[watchable_cleanupfns].push(
+                dataToWatch[watchable_watch](() => {
+                    // when any data changes
+                    let valueToReturn = this[watchable_value](); // get our own value
+                    this[watchable_watchers].map(watcher =>
+                        watcher(valueToReturn)
+                    ); // emit our value
+                })
+            );
+        });
     }
     [watchable_cleanup]() {
         this[watchable_cleanupfns].map(cfn => cfn());
@@ -184,6 +197,8 @@ class WatchableRef<T> extends WatchableBase<void> {
     [watchable_value]() {
         return undefined; // watchable refs actually have no value
     }
+    [watchable_setup]() {}
+    [watchable_cleanup]() {}
 }
 
 function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
