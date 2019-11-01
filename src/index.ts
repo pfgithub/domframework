@@ -2,16 +2,18 @@ console.log("It works!");
 
 export const watchable_watchers = Symbol("watchers");
 export const watchable_watch = Symbol("watch");
+export const watchable_value = Symbol("value");
+export const watchable_ref = Symbol("ref");
+export const watchable_cb = Symbol("cb");
 
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
 interface Watchable<T> {
     [watchable_watch](v: (v: T) => void): void;
+    [watchable_value](): T;
 }
 
-interface WatchableComponent {
-    [watchable_watch](v: (v: ComponentModel) => void): void;
-}
+interface WatchableComponent extends Watchable<ComponentModel> {}
 
 /*
 
@@ -49,14 +51,17 @@ function createComponent(
         let finalNode = document.createTextNode(""); // nodes are inserted before this node
         parent.appendChild(finalNode);
         let removalFunctions: (() => void)[] = [];
-        c[watchable_watch](model => {
+        let updateValue = (model: ComponentModel) => {
             // clear outdated nodes
             removalFunctions.map(rf => rf());
             removalFunctions = [];
             // create new nodes
             let { removeSelf } = createComponent(model, parent);
             removalFunctions.push(removeSelf);
-        });
+        };
+        c[watchable_watch](updateValue);
+        let currentModel = c[watchable_value]();
+        updateValue(currentModel);
         return {
             finalNode,
             removeSelf: () => {
@@ -87,6 +92,8 @@ const d = (
             a[watchable_watch]((v: any) => {
                 (element as any)[prop] = v;
             });
+            let current = a[watchable_value]();
+            (element as any)[prop] = current;
             return;
         }
         (element as any)[prop] = a;
@@ -102,37 +109,47 @@ const d = (
 
 // type RealOrWatchable<T> = T | Watchable<T>;
 
-class WatchableBase<T> implements Watchable<T> {
+abstract class WatchableBase<T> implements Watchable<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
     [watchable_watch](watcher: (v: T) => void): void {
         this[watchable_watchers].push(watcher);
     }
+    abstract [watchable_value](): T;
 }
 
 class WatchableDependencyList<T> extends WatchableBase<T> {
+    private [watchable_cb]: () => T;
     constructor(data: Watchable<any>[], cb: () => T) {
         super();
+        this[watchable_cb] = cb;
         data.map(dataToWatch => {
             dataToWatch[watchable_watch](() => {
-                let valueToReturn = cb();
-                this[watchable_watchers].map(watcher => watcher(valueToReturn));
+                // when any data changes
+                let valueToReturn = cb(); // get our own value
+                this[watchable_watchers].map(watcher => watcher(valueToReturn)); // emit our value
             });
         });
+    }
+    [watchable_value]() {
+        return this[watchable_cb]();
     }
 }
 
 class WatchableRef<T> extends WatchableBase<void> {
-    private __ref: T;
+    private [watchable_ref]: T;
     constructor(data: T) {
         super();
-        this.__ref = data;
+        this[watchable_ref] = data;
     }
     get ref() {
-        return this.__ref;
+        return this[watchable_ref];
     }
     set ref(nv: T) {
-        this.__ref = nv;
+        this[watchable_ref] = nv;
         this[watchable_watchers].map(watcher => watcher());
+    }
+    [watchable_value]() {
+        return undefined; // watchable refs actually have no value
     }
 }
 
