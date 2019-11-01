@@ -4,7 +4,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const ProgressBarPlugin = require("progress-bar-webpack-plugin");
 
 module.exports = {
-    entry: "./src/index.ts",
+    entry: "./src/index.tsx",
     devtool: "inline-source-map",
     module: {
         rules: [
@@ -17,7 +17,8 @@ module.exports = {
                     plugins: [
                         "transform-inline-scss",
                         "@babel/plugin-syntax-dynamic-import",
-                        "@babel/plugin-proposal-class-properties"
+                        "@babel/plugin-proposal-class-properties",
+                        "@babel/plugin-transform-react-jsx"
                     ]
                 }
             }

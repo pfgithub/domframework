@@ -9,7 +9,8 @@
         "lib": ["es2017", "dom"],
         "resolveJsonModule": true,
         "declaration": true,
-        "strict": true
+        "strict": true,
+        "jsx": true
     },
     "include": ["src/**/*", "bin/**/*", "test/**/*", "index.ts"]
 }

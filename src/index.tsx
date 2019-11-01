@@ -1,3 +1,6 @@
+/** @jsx d */
+/** @jsxFrag fragment */
+
 console.log("It works!");
 
 export const watchable_watchers = Symbol("watchers");
@@ -95,23 +98,25 @@ const d = (
 ): ExistingComponentModel => {
     let element = document.createElement(componentName);
     let removalHandlers: (() => void)[] = [];
-    Object.keys(props).map(prop => {
-        let a: any = props[prop];
-        if (a[watchable_watch]) {
-            removalHandlers.push(
-                a[watchable_watch]((v: any) => {
-                    (element as any)[prop] = v;
-                })
-            );
-            let current = a[watchable_value]();
-            (element as any)[prop] = current;
-            return;
-        }
-        (element as any)[prop] = a;
-    });
-    children.map(c => {
-        removalHandlers.push(createComponent(c, element).removeSelf);
-    });
+    if (props)
+        Object.keys(props).map(prop => {
+            let a: any = props[prop];
+            if (a[watchable_watch]) {
+                removalHandlers.push(
+                    a[watchable_watch]((v: any) => {
+                        (element as any)[prop] = v;
+                    })
+                );
+                let current = a[watchable_value]();
+                (element as any)[prop] = current;
+                return;
+            }
+            (element as any)[prop] = a;
+        });
+    if (children)
+        children.map(c => {
+            removalHandlers.push(createComponent(c, element).removeSelf);
+        });
     return {
         node: element,
         removeSelf: () => removalHandlers.forEach(h => h())
@@ -304,6 +309,49 @@ let model = d(
     )
 );
 
+let modelJSX = (
+    <div>
+        <button onclick={() => (contentIsShowing.ref = !contentIsShowing.ref)}>
+            {textNode(
+                watch([contentIsShowing], () =>
+                    contentIsShowing.ref ? "Hide" : "Show"
+                )
+            )}
+        </button>
+        {watch([contentIsShowing], () =>
+            contentIsShowing.ref ? (
+                <div>
+                    <span>
+                        {textNode("Count: ")}
+                        {textNode(
+                            watch(
+                                [watchableCount],
+                                () => "" + watchableCount.ref
+                            )
+                        )}
+                    </span>
+                    {textNode(" ")}
+                    {textNode(
+                        watch([watchableCount], () => "" + watchableCount.ref)
+                    )}
+                    <button onclick={() => watchableCount.ref++}>
+                        {textNode("++")}
+                    </button>
+                    <button
+                        onclick={() => {
+                            model.removeSelf();
+                        }}
+                    >
+                        {textNode("removeSelf")}
+                    </button>
+                </div>
+            ) : (
+                d("div", {})
+            )
+        )}
+    </div>
+);
+
 // let model = d(
 //     "button",
 //     {
@@ -320,5 +368,6 @@ let model = d(
 // );
 
 document.body.appendChild((model as any).node);
+document.body.appendChild((modelJSX as any).node);
 
 // let counter = Component<{ count: number }>(data => d.div(data.count));
