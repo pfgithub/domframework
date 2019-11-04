@@ -120,7 +120,8 @@ const d = (
             if (a[watchable_watch]) {
                 removalHandlers.push(
                     a[watchable_watch]((v: any) => {
-                        (element as any)[prop] = v;
+                        if ((element as any)[prop] !== v)
+                            (element as any)[prop] = v;
                         // notify prop update
                         window.onNodeUpdate(element);
                     })
@@ -267,7 +268,7 @@ function textNode(v: string | Watchable<string>): ExistingComponentModel {
     if (isWatchable(v)) {
         removalHandlers.push(
             v[watchable_watch](nv => {
-                node.nodeValue = nv;
+                if (node.nodeValue !== nv) node.nodeValue = nv;
                 window.onNodeUpdate(node);
             })
         );
