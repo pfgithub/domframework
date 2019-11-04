@@ -506,6 +506,8 @@ class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
         }
     }
 
+    // !!!!!!!! needs list constructor
+
     onAdd(handler: AddHandler<T>) {
         this.__addHandlers.push(handler);
         return () =>
@@ -743,3 +745,173 @@ document.body.appendChild(
 document.body.appendChild(ArrayTest(mainList).node);
 
 // let counter = Component<{ count: number }>(data => d.div(data.count));
+
+class FakeEmitter<T extends Watchable<void> | undefined> extends WatchableBase<
+    void
+> {
+    private __trueValue: T | undefined = undefined;
+    private __removalHandler: () => void = () => undefined;
+    get value(): T | undefined {
+        return this.__trueValue;
+    }
+    set value(value: T | undefined) {
+        this.__removalHandler();
+        this.__trueValue = value;
+        if (value)
+            this.__removalHandler = value[watchable_watch](() => {
+                // emit self
+                this[watchable_emit]();
+            });
+        else this.__removalHandler = () => undefined;
+        this[watchable_emit]();
+    }
+    [watchable_value](): void {}
+    [watchable_setup](): void {}
+    [watchable_cleanup](): void {
+        this.__removalHandler();
+    }
+}
+
+class WatchableObject<
+    T extends { [key: string]: Watchable<void> | undefined }
+> extends WatchableBase<void> {
+    [watchable_value](): void {
+        throw new Error("Method not implemented.");
+    }
+    [watchable_setup](): void {
+        throw new Error("Method not implemented.");
+    }
+    [watchable_cleanup](): void {
+        throw new Error("Method not implemented.");
+    }
+    private __object: {
+        [key in keyof T]: {
+            removalHandler: () => void;
+            fakeEmitter: FakeEmitter<T[key]>;
+        };
+    };
+    constructor(object: T) {
+        super();
+        //@ts-ignore
+        this.__object = {};
+        // !!!!!!!!!!!!! TODO!!!
+        Object.keys(object).forEach(k => {
+            //@ts-ignore
+            this.create(k, object[k]);
+        });
+    }
+    create(key: keyof T, value: T[typeof key] | undefined) {
+        // add a watcher on the fakeemitter to delete(key) when it is cleaned up
+        // :::
+        // someone may get a value that does not exist
+        // in this situation, we need to create a temporary fakeEmitter
+        // if the value gets set, that's fine.
+        // once everyone watching the fakeemitter is done, if there is no value,
+        // it needs to be cleaned up.
+        // Maybe the fakeemitter can have a reference to this that it calls
+        // on cleanup if it === undefined
+        // Keep in mind we need to differentiate between
+        // {a: undefined}
+        // and
+        // {}
+        let fakeEmitter = new FakeEmitter<T[typeof key]>();
+        fakeEmitter.value = value;
+        let removalHandler = fakeEmitter[watchable_watch](() => {
+            // !!!!!!!! emit create event
+            this[watchable_emit]();
+        });
+        // fakeEmitter.onCleanup() // if(it === undefined) // cleanup
+        let newValue = { removalHandler, fakeEmitter };
+        this.__object[key] = newValue;
+    }
+    get(key: keyof T): FakeEmitter<T[typeof key]> {
+        // return new ObjectValueGetter
+        let value = this.__object[key];
+        if (!value) {
+            this.create(key, undefined);
+            return this.__object[key].fakeEmitter;
+        }
+        return value.fakeEmitter;
+    }
+    set(key: keyof T, value: T[typeof key]) {
+        if (this.__object[key]) {
+            this.__object[key].fakeEmitter.value = value; // fakeemitter will handle event emitting
+        } else {
+            this.create(key, value);
+        }
+    }
+    delete(key: keyof T) {
+        if (this.__object[key]) {
+            this.__object[key].fakeEmitter; // !!!!!!!!!!!!! tell fakeemitter it should delete once all its watchers are cleared
+        }
+    }
+}
+
+let demoWatchableObject = new WatchableObject({
+    a: new WatchableRef(3),
+    b: new WatchableRef(5)
+});
+
+document.body.appendChild(
+    (
+        <div>
+            <div>
+                a:{" "}
+                {watch(
+                    [demoWatchableObject.get("a")],
+                    () => "" + demoWatchableObject.get("a").value!.ref
+                )}
+                <button
+                    onclick={() => demoWatchableObject.get("a").value!.ref++}
+                >
+                    a++
+                </button>
+            </div>
+            <div>
+                b:{" "}
+                {watch([demoWatchableObject.get("b")], () =>
+                    demoWatchableObject.get("b").value
+                        ? "" + demoWatchableObject.get("b").value!.ref
+                        : "undefined"
+                )}
+                <button
+                    onclick={() => demoWatchableObject.get("b").value!.ref++}
+                >
+                    b++
+                </button>
+            </div>
+        </div>
+    ).node
+);
+
+/*
+
+=== Unforseen Challenge Room ===
+
+object.get("undefined") // ObjectValueGetter(realvalue: undefined)
+object.set("undefined", new WatchableRef(5)) // ObjectValueGetter(realvalue: 5*)
+// get(undefined) emits an event
+undefined.value.ref = 10
+// get(undefined emits an event)
+object.set("undefined", new WatchableRef(3)) // ObjectValueGetter(realvalue: 5*)
+// what happens here?
+// what about the old WatchableRef?
+// obviously, get(undefined) emits that it's 3 now
+// but what if watchableref was an object
+
+// ok the above shouldn't* be a problem
+// because you should have to watch the outer
+// object which will make you unmount anything
+// inside if it changes
+
+let data = watchable({a: {b: c}});
+
+<Component>
+
+watch([data.a], () => <div>
+    a is: 
+</div>)
+
+</Component>
+
+*/
