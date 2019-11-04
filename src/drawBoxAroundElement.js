@@ -294,13 +294,11 @@ window.onNodeUpdate = node => {
         clearTimeout(nextTickTimeout);
     }
     nextTickTimeout = setTimeout(() => {
-        nodesUpdatedThisTick.forEach(node => {
-            if (node instanceof Text) {
-                drawBoxAroundElement(node.parentElement);
-            } else {
-                drawBoxAroundElement(node);
-            }
-        });
+        drawBoxAroundElement(
+            ...nodesUpdatedThisTick.map(node =>
+                node instanceof Text ? node.parentElement : node
+            )
+        );
         nodesUpdatedThisTick = [];
     }, 0);
 };
