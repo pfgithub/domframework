@@ -105,7 +105,7 @@ function createComponent(
 }
 
 const d = (
-    componentName: string,
+    componentName: string | ((props: {}) => ExistingComponentModel),
     props: {
         [key: string]:
             | string
@@ -115,6 +115,9 @@ const d = (
     },
     ...children: ComponentModel[]
 ): ExistingComponentModel => {
+    if (typeof componentName === "function") {
+        return componentName({ children, ...props });
+    }
     let element = document.createElement(componentName);
     let removalHandlers: (() => void)[] = [];
     if (props)
@@ -1013,6 +1016,28 @@ document.body.appendChild(
                 )
             )}
         </div>
+    ).node
+);
+
+function FunctionalComponent(props: { a: WatchableRef<string> }) {
+    return (
+        <div>
+            <input
+                value={props.a.$ref}
+                oninput={e =>
+                    (props.a.ref = (e.currentTarget as HTMLInputElement).value)
+                }
+            />
+            {props.a.$ref}
+        </div>
+    );
+}
+
+document.body.appendChild(
+    (
+        <FunctionalComponent
+            a={new WatchableRef("string goes here string  string string ")}
+        />
     ).node
 );
 
