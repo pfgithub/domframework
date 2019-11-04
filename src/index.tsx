@@ -499,8 +499,11 @@ class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
     [watchable_value](): void {}
     [watchable_setup](): void {}
     [watchable_cleanup](): void {
-        // foreach and call removalHandler()
-        throw new Error("Method not implemented.");
+        let currentItem = this.__start;
+        while (currentItem) {
+            currentItem.removalHandler();
+            currentItem = currentItem.next;
+        }
     }
 
     onAdd(handler: AddHandler<T>) {
