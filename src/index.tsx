@@ -889,25 +889,51 @@ type WatchableObjectThing = WatchableObject<{
     string: WatchableRef<string>;
     visible: WatchableRef<boolean>;
     list: WatchableList<WatchableObjectThing>;
+    removeConfirmVisible: WatchableRef<false>;
 }>;
 
 let testWatchableObject: WatchableObjectThing = new WatchableObject({
     string: new WatchableRef("item 1"),
     visible: new WatchableRef(true),
-    list: new WatchableList()
+    list: new WatchableList(),
+    removeConfirmVisible: new WatchableRef(false)
 });
 
-function ListOneItem(obj: WatchableObjectThing) {
+function ListOneItem(obj: WatchableObjectThing, onRemove: () => void) {
     let visible = obj.get("visible") as FakeEmitter<WatchableRef<boolean>>;
     let list = obj.get("list") as FakeEmitter<
         WatchableList<WatchableObjectThing>
     >;
     let string = obj.get("string") as FakeEmitter<WatchableRef<string>>;
+    let removeConfirmVisible = obj.get("removeConfirmVisible") as FakeEmitter<
+        WatchableRef<boolean>
+    >;
     return (
         <div>
             <button onclick={() => (visible.value!.ref = !visible.value!.ref)}>
                 {watch([visible], () => (visible.value!.ref ? "Hide" : "Show"))}
             </button>
+            {watch([removeConfirmVisible], () =>
+                !removeConfirmVisible.value!.ref ? (
+                    <button
+                        onclick={() => (removeConfirmVisible.value!.ref = true)}
+                    >
+                        Remove
+                    </button>
+                ) : (
+                    <span>
+                        Are you sure?{" "}
+                        <button onclick={() => onRemove()}>Remove</button>
+                        <button
+                            onclick={() =>
+                                (removeConfirmVisible.value!.ref = false)
+                            }
+                        >
+                            Keep
+                        </button>
+                    </span>
+                )
+            )}
             {watch([visible], () =>
                 visible.value!.ref ? (
                     <div>
@@ -920,22 +946,35 @@ function ListOneItem(obj: WatchableObjectThing) {
                         <ul>
                             {ListRender({
                                 list: list.value!,
-                                children: (e, s) => <li>{ListOneItem(e)}</li>
+                                children: (e, s) => (
+                                    <li>
+                                        {ListOneItem(e, () =>
+                                            list.value!.remove(s)
+                                        )}
+                                    </li>
+                                )
                             })}
+                            <li>
+                                <button
+                                    onclick={() => {
+                                        list.value!.push(
+                                            new WatchableObject({
+                                                string: new WatchableRef(
+                                                    "item 1"
+                                                ),
+                                                visible: new WatchableRef(true),
+                                                list: new WatchableList(),
+                                                removeConfirmVisible: new WatchableRef(
+                                                    false
+                                                )
+                                            })
+                                        );
+                                    }}
+                                >
+                                    +item
+                                </button>
+                            </li>
                         </ul>
-                        <button
-                            onclick={() => {
-                                list.value!.push(
-                                    new WatchableObject({
-                                        string: new WatchableRef("item 1"),
-                                        visible: new WatchableRef(true),
-                                        list: new WatchableList()
-                                    })
-                                );
-                            }}
-                        >
-                            +item
-                        </button>
                     </div>
                 ) : (
                     undefined
@@ -945,7 +984,11 @@ function ListOneItem(obj: WatchableObjectThing) {
     );
 }
 
-document.body.appendChild(ListOneItem(testWatchableObject).node);
+document.body.appendChild(
+    ListOneItem(testWatchableObject, () =>
+        alert("Cannot remove top level element")
+    ).node
+);
 
 let buttonIsShowing = new WatchableRef(true);
 document.body.appendChild(
