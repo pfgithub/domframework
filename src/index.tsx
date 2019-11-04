@@ -119,6 +119,9 @@ const d = (
     let removalHandlers: (() => void)[] = [];
     if (props)
         Object.keys(props).map(prop => {
+            if (prop === "nodecreated") {
+                throw new Error("Node created not implemented yet");
+            }
             let a: any = props[prop];
             if (a[watchable_watch]) {
                 removalHandlers.push(
@@ -363,6 +366,7 @@ type TagNameToPropsMap = {
     [elemName in keyof HTMLElementTagNameMap]: OptionalProps<
         HTMLElementTagNameMap[elemName] & {
             children: ComponentModel[] | ComponentModel;
+            nodecreated: (node: HTMLElementTagNameMap[elemName]) => void;
         }
     >;
 };
@@ -1011,6 +1015,8 @@ document.body.appendChild(
         </div>
     ).node
 );
+
+// <input nodecreated={node => node.value}/>
 
 /*
 
