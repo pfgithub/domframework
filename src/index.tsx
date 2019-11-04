@@ -6,6 +6,14 @@ export const watchable_value = Symbol("value");
 export const watchable_ref = Symbol("ref");
 export const watchable_cb = Symbol("cb");
 
+declare global {
+    interface Window {
+        onNodeUpdate: (node: Node) => void;
+    }
+}
+
+window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
+
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
 interface Watchable<T> {
@@ -52,6 +60,7 @@ function createComponent(
     if (typeof c === "string") {
         let textNode = document.createTextNode(c);
         insert(textNode);
+        window.onNodeUpdate(textNode);
         return { finalNode: textNode, removeSelf: () => textNode.remove() };
     }
     if (isWatchable(c)) {
@@ -71,6 +80,7 @@ function createComponent(
         let unwatch = c[watchable_watch](updateValue);
         let currentModel = c[watchable_value]();
         updateValue(currentModel);
+        window.onNodeUpdate(finalNode);
         return {
             finalNode,
             removeSelf: () => {
@@ -81,6 +91,7 @@ function createComponent(
         };
     }
     insert(c.node);
+    window.onNodeUpdate(c.node);
     return {
         finalNode: c.node,
         removeSelf: () => {
@@ -110,6 +121,8 @@ const d = (
                 removalHandlers.push(
                     a[watchable_watch]((v: any) => {
                         (element as any)[prop] = v;
+                        // notify prop update
+                        window.onNodeUpdate(element);
                     })
                 );
                 let current = a[watchable_value]();
@@ -124,6 +137,7 @@ const d = (
                 createComponent(c, node => element.appendChild(node)).removeSelf
             );
         });
+    window.onNodeUpdate(element);
     return {
         node: element,
         removeSelf: () => removalHandlers.forEach(h => h())
@@ -254,6 +268,7 @@ function textNode(v: string | Watchable<string>): ExistingComponentModel {
         removalHandlers.push(
             v[watchable_watch](nv => {
                 node.nodeValue = nv;
+                window.onNodeUpdate(node);
             })
         );
     }

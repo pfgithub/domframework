@@ -282,6 +282,25 @@ function getElementDimensions(domElement) {
 
 initialize();
 
-export function drawBoxAroundElement(...elements) {
+function drawBoxAroundElement(...elements) {
     traceUpdates(elements);
 }
+
+let nodesUpdatedThisTick = [];
+let nextTickTimeout;
+window.onNodeUpdate = node => {
+    nodesUpdatedThisTick.push(node);
+    if (nextTickTimeout) {
+        clearTimeout(nextTickTimeout);
+    }
+    nextTickTimeout = setTimeout(() => {
+        nodesUpdatedThisTick.forEach(node => {
+            if (node instanceof Text) {
+                drawBoxAroundElement(node.parentElement);
+            } else {
+                drawBoxAroundElement(node);
+            }
+        });
+        nodesUpdatedThisTick = [];
+    }, 0);
+};
