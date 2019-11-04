@@ -775,14 +775,12 @@ class FakeEmitter<T extends Watchable<void> | undefined> extends WatchableBase<
 class WatchableObject<
     T extends { [key: string]: Watchable<void> | undefined }
 > extends WatchableBase<void> {
-    [watchable_value](): void {
-        throw new Error("Method not implemented.");
-    }
+    [watchable_value](): void {}
     [watchable_setup](): void {
-        throw new Error("Method not implemented.");
+        // throw new Error("Method not implemented.");
     }
     [watchable_cleanup](): void {
-        throw new Error("Method not implemented.");
+        // throw new Error("Method not implemented.");
     }
     private __object: {
         [key in keyof T]: {
@@ -883,6 +881,68 @@ document.body.appendChild(
         </div>
     ).node
 );
+
+type WatchableObjectThing = WatchableObject<{
+    string: WatchableRef<string>;
+    visible: WatchableRef<boolean>;
+    list: WatchableList<WatchableObjectThing>;
+}>;
+
+let testWatchableObject: WatchableObjectThing = new WatchableObject({
+    string: new WatchableRef("item 1"),
+    visible: new WatchableRef(true),
+    list: new WatchableList()
+});
+
+function ListOneItem(obj: WatchableObjectThing) {
+    let visible = obj.get("visible") as FakeEmitter<WatchableRef<boolean>>;
+    let list = obj.get("list") as FakeEmitter<
+        WatchableList<WatchableObjectThing>
+    >;
+    let string = obj.get("string") as FakeEmitter<WatchableRef<string>>;
+    return (
+        <div>
+            <button onclick={() => (visible.value!.ref = !visible.value!.ref)}>
+                {watch([visible], () => (visible.value!.ref ? "Hide" : "Show"))}
+            </button>
+            {watch([visible], () =>
+                visible.value!.ref ? (
+                    <div>
+                        <input
+                            value={string.value!.ref}
+                            oninput={e =>
+                                (string.value!.ref = (e.currentTarget as HTMLInputElement).value)
+                            }
+                        />
+                        <ul>
+                            {ListRender({
+                                list: list.value!,
+                                children: (e, s) => <li>{ListOneItem(e)}</li>
+                            })}
+                        </ul>
+                        <button
+                            onclick={() => {
+                                list.value!.push(
+                                    new WatchableObject({
+                                        string: new WatchableRef("item 1"),
+                                        visible: new WatchableRef(true),
+                                        list: new WatchableList()
+                                    })
+                                );
+                            }}
+                        >
+                            +item
+                        </button>
+                    </div>
+                ) : (
+                    undefined
+                )
+            )}
+        </div>
+    );
+}
+
+document.body.appendChild(ListOneItem(testWatchableObject).node);
 
 /*
 
