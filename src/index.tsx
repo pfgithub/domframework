@@ -654,8 +654,6 @@ function ListRender<T extends Watchable<any>>(props: {
 
 function makeWatchablesFromBuiltins() {}
 
-let watchablearray = new WatchableList<WatchableRef<string>>();
-
 /*
 <ArrayRender array={watchablearray}>
     {element => (
@@ -671,30 +669,32 @@ let watchablearray = new WatchableList<WatchableRef<string>>();
 </ArrayRender>
 */
 
-let updateCount = 0;
+let updateCount = new WatchableRef(0);
+let globalValue = new WatchableRef("");
 
-document.body.appendChild(
-    (
+type RecursiveWatchableList = WatchableList<WatchableList<any>>;
+
+function ArrayTest(list: RecursiveWatchableList) {
+    return (
         <div>
-            <div>
-                Array Updates:{" "}
-                {watch([watchablearray], () => "" + updateCount++)}
-            </div>
+            <label>
+                Global Value:{" "}
+                <input
+                    oninput={e =>
+                        (globalValue.ref = (e.currentTarget! as HTMLInputElement).value)
+                    }
+                    value={globalValue.$ref}
+                />
+            </label>
             <ul>
                 {ListRender({
-                    list: watchablearray,
+                    list,
                     children: (element, symbol) => (
                         <li>
-                            <input
-                                value={element.$ref}
-                                oninput={e =>
-                                    (element.ref = (e.currentTarget! as any).value)
-                                }
-                            />
-                            <span>{element.$ref}</span>
+                            {ArrayTest(element)}
                             <button
                                 onclick={() => {
-                                    watchablearray.remove(symbol);
+                                    list.remove(symbol);
                                 }}
                             >
                                 x
@@ -703,15 +703,24 @@ document.body.appendChild(
                     )
                 })}
             </ul>
-            <button
-                onclick={() =>
-                    watchablearray.push(new WatchableRef("new element"))
-                }
-            >
+            <button onclick={() => list.push(new WatchableList<any>())}>
                 +Elem
             </button>
         </div>
+    );
+}
+
+let mainList = new WatchableList<any>();
+
+mainList[watchable_watch](() => updateCount.ref++);
+
+document.body.appendChild(
+    (
+        <div>
+            Array Updates: {watch([updateCount], () => "" + updateCount.ref)}{" "}
+        </div>
     ).node
 );
+document.body.appendChild(ArrayTest(mainList).node);
 
 // let counter = Component<{ count: number }>(data => d.div(data.count));
