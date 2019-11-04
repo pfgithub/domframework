@@ -1,5 +1,7 @@
 console.log("It works!");
 
+import "./drawBoxAroundElement";
+
 export const watchable_watchers = Symbol("watchers");
 export const watchable_watch = Symbol("watch");
 export const watchable_value = Symbol("value");
@@ -9,6 +11,7 @@ export const watchable_cb = Symbol("cb");
 declare global {
     interface Window {
         onNodeUpdate: (node: Node) => void;
+        startHighlightUpdates: () => void;
     }
 }
 
@@ -944,6 +947,28 @@ function ListOneItem(obj: WatchableObjectThing) {
 
 document.body.appendChild(ListOneItem(testWatchableObject).node);
 
+let buttonIsShowing = new WatchableRef(true);
+document.body.appendChild(
+    (
+        <div>
+            {watch([buttonIsShowing], () =>
+                buttonIsShowing.ref ? (
+                    <button
+                        onclick={() => {
+                            window.startHighlightUpdates();
+                            buttonIsShowing.ref = false;
+                        }}
+                    >
+                        highlight updates
+                    </button>
+                ) : (
+                    <div></div>
+                )
+            )}
+        </div>
+    ).node
+);
+
 /*
 
 === Unforseen Challenge Room ===
@@ -969,7 +994,7 @@ let data = watchable({a: {b: c}});
 <Component>
 
 watch([data.a], () => <div>
-    a is: 
+    a is:
 </div>)
 
 </Component>

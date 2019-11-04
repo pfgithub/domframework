@@ -286,19 +286,21 @@ function drawBoxAroundElement(...elements) {
     traceUpdates(elements);
 }
 
-let nodesUpdatedThisTick = [];
-let nextTickTimeout;
-window.onNodeUpdate = node => {
-    nodesUpdatedThisTick.push(node);
-    if (nextTickTimeout) {
-        clearTimeout(nextTickTimeout);
-    }
-    nextTickTimeout = setTimeout(() => {
-        drawBoxAroundElement(
-            ...nodesUpdatedThisTick.map(node =>
-                node instanceof Text ? node.parentElement : node
-            )
-        );
-        nodesUpdatedThisTick = [];
-    }, 0);
+window.startHighlightUpdates = () => {
+    let nodesUpdatedThisTick = [];
+    let nextTickTimeout;
+    window.onNodeUpdate = node => {
+        nodesUpdatedThisTick.push(node);
+        if (nextTickTimeout) {
+            clearTimeout(nextTickTimeout);
+        }
+        nextTickTimeout = setTimeout(() => {
+            drawBoxAroundElement(
+                ...nodesUpdatedThisTick.map(node =>
+                    node instanceof Text ? node.parentElement : node
+                )
+            );
+            nodesUpdatedThisTick = [];
+        }, 0);
+    };
 };
