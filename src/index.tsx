@@ -120,10 +120,12 @@ const d = (
     }
     let element = document.createElement(componentName);
     let removalHandlers: (() => void)[] = [];
+    let nodeCreationHandler: Function | undefined;
     if (props)
         Object.keys(props).map(prop => {
             if (prop === "nodecreated") {
-                throw new Error("Node created not implemented yet");
+                nodeCreationHandler = props[prop] as Function;
+                return;
             }
             let a: any = props[prop];
             if (a[watchable_watch]) {
@@ -148,6 +150,7 @@ const d = (
             );
         });
     window.onNodeUpdate(element);
+    if (nodeCreationHandler) nodeCreationHandler(element); // maybe nodecreationhandler should return removal functions
     return {
         node: element,
         removeSelf: () => removalHandlers.forEach(h => h())
