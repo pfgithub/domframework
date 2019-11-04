@@ -280,13 +280,13 @@ function getElementDimensions(domElement) {
     };
 }
 
-initialize();
-
 function drawBoxAroundElement(...elements) {
     traceUpdates(elements);
 }
 
 window.startHighlightUpdates = () => {
+    initialize();
+
     let nodesUpdatedThisTick = [];
     let nextTickTimeout;
     window.onNodeUpdate = node => {
