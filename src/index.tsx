@@ -442,118 +442,51 @@ document.body.appendChild(
 );
 
 type AddHandler<T extends Watchable<any>> = (
-    item: T, // from {prev, next}
-    to: { prevSymbol?: symbol; thisSymbol: symbol; nextSymbol?: symbol }
+    symbol: symbol,
+    prevSymbol: symbol | undefined
 ) => void;
 type UpdateHandler<T extends Watchable<any>> = (
-    item: T,
-    from: { prevSymbol?: symbol; thisSymbol: symbol; nextSymbol?: symbol },
-    to: { prevSymbol?: symbol; thisSymbol: symbol; nextSymbol?: symbol }
+    // when an item updates
+    symbol: symbol
+) => void;
+type MoveHandler<T extends Watchable<any>> = (
+    // when an item moves
+    prevSymbol: symbol | undefined,
+    nextPrevSymbol: symbol | undefined
 ) => void;
 type RemoveHandler<T extends Watchable<any>> = (
-    item: T,
-    from: { prevSymbol?: symbol; thisSymbol: symbol; nextSymbol?: symbol }
+    symbol: symbol,
+    prevSymbol: symbol | undefined
 ) => void;
 
 let symbolKey = (symbol: symbol) => (symbol as unknown) as string; // typescript does not allow symbols to be used as keys, so we pretend they are strings
+
 type WatchableListItem<T extends Watchable<any>> = {
     prev?: WatchableListItem<T>; // should this be symbol instead?
     self: T;
     symbol: symbol;
     next?: WatchableListItem<T>;
+    removalHandler: () => void;
 };
 
-class WatchableList<T extends Watchable<any>> {
+class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
     private __items: {
         [key: /*symbol*/ string]: WatchableListItem<T>;
     } = {};
     private __start?: WatchableListItem<T>;
     private __end?: WatchableListItem<T>;
-    insert(beforeSymbol: symbol | undefined, item: T) {
-        let itemSymbol = Symbol("list item");
-        let beforeItem = beforeSymbol
-            ? this.__items[symbolKey(beforeSymbol)]
-            : undefined;
-        let nextItem = beforeItem ? beforeItem.next : this.__start;
-        let resultItem: WatchableListItem<T> = {
-            prev: beforeItem,
-            self: item,
-            symbol: itemSymbol,
-            next: nextItem
-        };
-        if (!beforeItem) {
-            this.__start = resultItem;
-        }
-        if (!nextItem) {
-            this.__end = nextItem;
-        }
-        this.__items[symbolKey(itemSymbol)] = resultItem;
-        // !!!!!!!!!!!! add watcher
-        // !!!!!!!!!!!! emit events
-    }
-    remove(symbol: symbol) {
-        let item = this.__items[symbolKey(symbol)];
-        if (item.prev) {
-            item.prev.next = item.next;
-        }
-        if (item.next) {
-            item.next.prev = item.prev;
-        }
-        if (this.__start === item) {
-            this.__start = item.next;
-        }
-        if (this.__end === item) {
-            this.__end = item.prev;
-        }
-        // !!!!!!!!!!!! remove watcher
-        // !!!!!!!!!!!! emit events
-    }
-    move(symbol: symbol, beforeSymbol: symbol) {
-        // TEMPORARY::
-        // instead, items should be moved properly and the right events should be emitted
-        let { prev, self } = this.__items[symbolKey(symbol)];
-        this.remove(symbol);
-        this.insert(prev ? prev.symbol : undefined, self);
-    }
-    forEach(cb: (item: T, index: number, symbol: symbol) => void) {
-        let currentItem = this.__start;
-        let i = 0;
-        while (currentItem) {
-            cb(currentItem.self, i, currentItem.symbol);
-            currentItem = currentItem.next;
-            i++;
-        }
-    }
-}
 
-/*
-
-
-on: add, move/update, remove
-
-insert (beforeSymbol, v): symbol
-::: watch(v, onc::update(symbol))
-move (symbol, beforeSymbol)
-::: move(symbol, beforeSymbol)
-remove (symbol)
-::: remove(symbol)
-
-*/
-
-class WatchableArray<T extends Watchable<any>> extends WatchableBase<void> {
-    private __items: { value: T; remove: () => void; symbol: symbol }[] = [];
     private __addHandlers: (AddHandler<T>)[] = [];
     private __updateHandlers: (UpdateHandler<T>)[] = [];
     private __removeHandlers: (RemoveHandler<T>)[] = [];
-    [watchable_value](): void {
-        return undefined; // watchable arrays actually have no value
-    }
-    [watchable_setup](): void {
-        // throw new Error("Method not implemented.");
-    }
+
+    [watchable_value](): void {}
+    [watchable_setup](): void {}
     [watchable_cleanup](): void {
-        // throw new Error("Method not implemented.");
+        // foreach and call removalHandler()
+        throw new Error("Method not implemented.");
     }
+
     onAdd(handler: AddHandler<T>) {
         this.__addHandlers.push(handler);
         return () =>
@@ -575,116 +508,83 @@ class WatchableArray<T extends Watchable<any>> extends WatchableBase<void> {
                 h => h !== handler
             ));
     }
-    push(newItem: T) {
-        let newItemValue = {
-            value: newItem,
-            remove: newItem[watchable_watch](() => {
+
+    insert(beforeSymbol: symbol | undefined, item: T) {
+        let itemSymbol = Symbol("list item");
+        let beforeItem = beforeSymbol
+            ? this.__items[symbolKey(beforeSymbol)]
+            : undefined;
+        let nextItem = beforeItem ? beforeItem.next : this.__start;
+        let resultItem: WatchableListItem<T> = {
+            prev: beforeItem,
+            self: item,
+            symbol: itemSymbol,
+            next: nextItem,
+            removalHandler: item[watchable_watch](() => {
+                this.__updateHandlers.forEach(h => h(itemSymbol));
                 this[watchable_emit]();
-            }),
-            symbol: Symbol("item")
-        };
-        let prevItem = this.__items[this.__items.length - 1];
-        this.__items.push(newItemValue);
-        this.__addHandlers.forEach(h =>
-            h(newItemValue.value, {
-                prevSymbol: prevItem ? prevItem.symbol : undefined,
-                thisSymbol: newItemValue.symbol,
-                nextSymbol: undefined
             })
+        };
+        if (!beforeItem) {
+            this.__start = resultItem;
+        }
+        if (!nextItem) {
+            this.__end = resultItem;
+        }
+        this.__items[symbolKey(itemSymbol)] = resultItem;
+
+        this.__addHandlers.forEach(h =>
+            h(itemSymbol, beforeItem ? beforeItem.symbol : undefined)
         );
         this[watchable_emit]();
     }
-    forEach(cb: (it: T, i: number, symbol: symbol) => void) {
-        this.__items.forEach((item, i) => cb(item.value, i, item.symbol));
+    push(item: T) {
+        this.insert(this.__end ? this.__end.symbol : undefined, item);
     }
-    get ref() {
-        return this.__items.map(it => ({ symbol: it.symbol, value: it.value }));
+    remove(symbol: symbol) {
+        let item = this.__items[symbolKey(symbol)];
+        if (item.prev) {
+            item.prev.next = item.next;
+        }
+        if (item.next) {
+            item.next.prev = item.prev;
+        }
+        if (this.__start === item) {
+            this.__start = item.next;
+        }
+        if (this.__end === item) {
+            this.__end = item.prev;
+        }
+        item.removalHandler();
+
+        this.__removeHandlers.forEach(h =>
+            h(symbol, item.prev ? item.prev.symbol : undefined)
+        );
+        this[watchable_emit]();
     }
-    addItem(prev: symbol, item: { value: T; symbol: symbol }, next: symbol) {
-        // if(!prev) firstItem insertBefore
-        // items[prev] insertAfter value, symbol
-    } // adds an item between prev and next
-    removeItem(symbol: symbol) {} // removes an item with a symbol
-    moveItem(symbol: symbol) {} // moves an item with a symbol
-    // ({ symbol: symbol; value: T })[]) {
-    //     let existingItems: {
-    //         [key: /*symbol*/ string]: {
-    //             value: T;
-    //             remove: () => void;
-    //             index: number;
-    //             symbol: symbol;
-    //             shouldRemove: boolean;
-    //         };
-    //     } = {};
-    //     this.__items.forEach(
-    //         (item, index) =>
-    //             (existingItems[(item.symbol as unknown) as string] = {
-    //                 ...item,
-    //                 index,
-    //                 shouldRemove: true
-    //             })
-    //     );
-    //     let resultArray: {
-    //         value: T;
-    //         remove: () => void;
-    //         symbol: symbol;
-    //     }[] = [];
-    //     let eventsForLater: (() => void)[];
-    //     /*
-    //     instead of the below, we want to
-    //     submit an ordered list of create, modify, remove events
-    //     */
-    //     items.forEach((item, index) => {
-    //         // new items need to be created
-    //         // existing items need to be updated
-    //         let key = (item.symbol as unknown) as string;
-    //         let existingItem = existingItems[key];
-    //         if (existingItem) {
-    //             // check if the item moved. if so, delete + recreate. not supported.
-    //             // done
-    //             existingItem.shouldRemove = false;
-    //             if (existingItem.value !== item.value) {
-    //                 console.log(
-    //                     "List .ref= must use new symbols for overwritten objects. Index " +
-    //                         index +
-    //                         ". The old value will be used instead."
-    //                 );
-    //             }
-    //             resultArray.push({
-    //                 value:
-    //                     existingItem.value /*to prevent breaking existing watchers*/,
-    //                 remove: existingItem.remove,
-    //                 symbol: existingItem.symbol
-    //             });
-    //             return;
-    //         }
-    //         // new item
-    //         let newItemValue = {
-    //             value: item.value,
-    //             remove: newItem[watchable_watch](() => {
-    //                 this[watchable_emit]();
-    //             }),
-    //             symbol: Symbol("item")
-    //         };
-    //         let prevItem = this.__items[this.__items.length - 1];
-    //         this.__items.push(newItemValue);
-    //         // this.__addHandlers.forEach(h =>
-    //         //     h(newItemValue.value, {
-    //         //         prevSymbol: prevItem ? prevItem.symbol : undefined,
-    //         //         thisSymbol: newItemValue.symbol,
-    //         //         nextSymbol: undefined // not known until the next iteration of the loop
-    //         //     })
-    //         // );
-    //         // this[watchable_emit]();
-    //     });
-    // }
-    /*item_add :: add item, add watcher to run our own emit*/
-    /*item_remove :: remove item, remove watcher*/
-    /*on anymodify,add,move,remove*/
+    move(symbol: symbol, beforeSymbol: symbol) {
+        // TEMPORARY::
+        // instead, items should be moved properly and the right events should be emitted
+        let { prev, self } = this.__items[symbolKey(symbol)];
+        this.remove(symbol);
+        this.insert(prev ? prev.symbol : undefined, self);
+    }
+    get(symbol: symbol) {
+        return this.__items[symbolKey(symbol)].self;
+    }
+    forEach(cb: (item: T, index: number, symbol: symbol) => void) {
+        let currentItem = this.__start;
+        let i = 0;
+        while (currentItem) {
+            cb(currentItem.self, i, currentItem.symbol);
+            currentItem = currentItem.next;
+            i++;
+        }
+    }
 }
 
-function ArrayRender<T extends Watchable<any>>(props: {
-    array: WatchableArray<T>;
+function ListRender<T extends Watchable<any>>(props: {
+    list: WatchableList<T>;
     children: (e: T, s: symbol) => JSX.Element;
     // index::
     // what to do about index?
@@ -694,10 +594,14 @@ function ArrayRender<T extends Watchable<any>>(props: {
     let result = <div></div>; // we don't have intrinsics yet but they are possible to add
     let removalHandlers = [];
     let nodeInformation: {
-        [key: string]: { value: T; removeSelf: () => void; finalNode: Node };
+        [key: string]: {
+            symbol: symbol;
+            removeSelf: () => void;
+            finalNode: Node;
+        };
     } = {};
     // add pre-existing items ::
-    props.array.forEach((item, index, symbol) => {
+    props.list.forEach((item, index, symbol) => {
         let { finalNode, removeSelf } = createComponent(
             props.children(item, symbol),
             node => result.node.appendChild(node)
@@ -705,13 +609,15 @@ function ArrayRender<T extends Watchable<any>>(props: {
         nodeInformation[(symbol as unknown) as string] = {
             removeSelf,
             finalNode,
-            value: item
+            symbol
         };
     });
     // handle changes
     removalHandlers.push(
-        props.array.onAdd((item, { prevSymbol, thisSymbol, nextSymbol }) => {
-            let infoBefore = nodeInformation[(prevSymbol as unknown) as string];
+        props.list.onAdd((symbol, prevSymbol) => {
+            let infoBefore = prevSymbol
+                ? nodeInformation[symbolKey(prevSymbol)]
+                : undefined;
             let nodeInsertFn: (node: Node) => void;
             if (infoBefore) {
                 let next = infoBefore.finalNode.nextSibling;
@@ -724,26 +630,23 @@ function ArrayRender<T extends Watchable<any>>(props: {
                 nodeInsertFn = node =>
                     ((result.node as unknown) as ParentNode).prepend(node);
             }
+            let item = props.list.get(symbol);
             let { finalNode, removeSelf } = createComponent(
-                props.children(item, thisSymbol),
+                props.children(item, symbol),
                 nodeInsertFn // !!!!!!!!!!! maybe instead of all this work to define nodeInsertFn here, we could have nodeBefore as a parameter to createComponent?
             );
-            nodeInformation[(thisSymbol as unknown) as string] = {
+            nodeInformation[symbolKey(symbol)] = {
                 removeSelf,
                 finalNode,
-                value: item
+                symbol
             };
         })
     );
-    // todo onupdate
-    // if prev.thisSymbol !== curr.thisSymbol
-    //// ??? magic (not sure if it's possible to move a node model unless it contains all the elements)
-    //// for now, probably just delete and recreate the node
     removalHandlers.push(
-        props.array.onRemove((item, { prevSymbol, thisSymbol, nextSymbol }) => {
-            let nodeInfo = nodeInformation[(thisSymbol as unknown) as string];
+        props.list.onRemove((symbol, prevSymbol) => {
+            let nodeInfo = nodeInformation[symbolKey(symbol)];
             nodeInfo.removeSelf();
-            delete nodeInformation[(thisSymbol as unknown) as string];
+            delete nodeInformation[symbolKey(symbol)];
         })
     );
     return result;
@@ -751,7 +654,7 @@ function ArrayRender<T extends Watchable<any>>(props: {
 
 function makeWatchablesFromBuiltins() {}
 
-let watchablearray = new WatchableArray<WatchableRef<string>>();
+let watchablearray = new WatchableList<WatchableRef<string>>();
 
 /*
 <ArrayRender array={watchablearray}>
@@ -778,8 +681,8 @@ document.body.appendChild(
                 {watch([watchablearray], () => "" + updateCount++)}
             </div>
             <ul>
-                {ArrayRender({
-                    array: watchablearray,
+                {ListRender({
+                    list: watchablearray,
                     children: (element, symbol) => (
                         <li>
                             <input
@@ -791,9 +694,7 @@ document.body.appendChild(
                             <span>{element.$ref}</span>
                             <button
                                 onclick={() => {
-                                    watchablearray.ref = watchablearray.ref.filter(
-                                        e => e.symbol !== symbol
-                                    );
+                                    watchablearray.remove(symbol);
                                 }}
                             >
                                 x
