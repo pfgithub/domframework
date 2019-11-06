@@ -19,44 +19,33 @@ window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
 
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
-interface Watchable<T> {
+export interface Watchable<T> {
     [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
     [watchable_value](): T;
 }
 
-interface WatchableComponent extends Watchable<ComponentModel> {}
+export interface WatchableComponent extends Watchable<ComponentModel> {}
 
-/*
-
-let counter = Component([d.div("$$props.count")])
-
-document.body.appendChild(counter.node());
-
-model::
-
-<div>
-<button #click></button>
-</div>
-
-*/
-
-type WrapWatchable<T> = T extends number | string | symbol | boolean
+export type WrapWatchable<T> = T extends number | string | symbol | boolean
     ? WatchableRef<T>
     : T extends Watchable<any>
     ? T
     : { [key in keyof T]: WrapWatchable<T[key]> };
 
-type ExistingComponentModel = {
+export type ExistingComponentModel = {
     node: ChildNode /*[]*/;
     removeSelf: () => void;
 };
-type ComponentModel = ExistingComponentModel | string | WatchableComponent;
+export type ComponentModel =
+    | ExistingComponentModel
+    | string
+    | WatchableComponent;
 
-function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
+export function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
     return !!(v as any)[watchable_watch];
 }
 
-function createComponent(
+export function createComponent(
     c: ComponentModel,
     insert: (node: Node) => void
 ): { finalNode: Node; removeSelf: () => void } {
@@ -104,7 +93,7 @@ function createComponent(
     };
 }
 
-const d = (
+export const d = (
     componentName: string | ((props: {}) => ExistingComponentModel),
     props: {
         [key: string]:
@@ -194,7 +183,7 @@ abstract class WatchableBase<T> implements Watchable<T> {
     abstract [watchable_cleanup](): void;
 }
 
-class WatchableDependencyList<T> extends WatchableBase<T> {
+export class WatchableDependencyList<T> extends WatchableBase<T> {
     private [watchable_cb]: () => T;
     private [watchable_data]: Watchable<any>[];
     private [watchable_cleanupfns]: (() => void)[] = [];
@@ -222,7 +211,7 @@ class WatchableDependencyList<T> extends WatchableBase<T> {
     }
 }
 
-class WatchableRef<T> extends WatchableBase<void> {
+export class WatchableRef<T> extends WatchableBase<void> {
     private [watchable_ref]: T;
     constructor(data: T) {
         super();
@@ -248,35 +237,13 @@ class WatchableRef<T> extends WatchableBase<void> {
     }
 }
 
-function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
+export function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
     return new WatchableDependencyList(data, cb);
 }
 
-// function Component<DataType>(
-//     componentfn: (data: WrapWatchable<DataType>) => ComponentModel
-// ) {
-//     return (data: WrapWatchable<DataType>) => {
-//         // only called when a component is initialized
-//         let model = componentfn(data);
-//         return undefined;
-//     };
-// }
-//
-// let counter = Component<{ count: number }>(data =>
-//     d(
-//         "div",
-//         {
-//             onclick: (e: any) => {
-//                 data.count.ref++;
-//             }
-//         },
-//         watch<ComponentModel>([data.count], () => ({
-//             node: document.createTextNode("" + data.count.ref)
-//         }))
-//     )
-// );
-
-function textNode(v: string | Watchable<string>): ExistingComponentModel {
+export function textNode(
+    v: string | Watchable<string>
+): ExistingComponentModel {
     let textValue = isWatchable(v) ? v[watchable_value]() : v;
     let node = document.createTextNode(textValue);
     let removalHandlers: (() => void)[] = [];
@@ -297,81 +264,11 @@ function textNode(v: string | Watchable<string>): ExistingComponentModel {
     };
 }
 
-let watchableCount = new WatchableRef(25);
-let contentIsShowing = new WatchableRef(false);
+export type RealOrWatchable<T> = T | Watchable<T>;
 
-let model = d(
-    "div",
-    {},
-    d(
-        "button",
-        {
-            onclick: () => (contentIsShowing.ref = !contentIsShowing.ref)
-        },
-        textNode(
-            watch([contentIsShowing], () =>
-                contentIsShowing.ref ? "Hide" : "Show"
-            )
-        )
-    ),
-    watch([contentIsShowing], () =>
-        contentIsShowing.ref
-            ? d(
-                  "div",
-                  {},
-                  d(
-                      "span",
-                      {},
-                      textNode("Count: "),
-                      textNode(
-                          watch([watchableCount], () => "" + watchableCount.ref)
-                      ),
-                      textNode(" ")
-                  ),
-                  textNode(
-                      watch([watchableCount], () => "" + watchableCount.ref)
-                  ),
-                  d(
-                      "button",
-                      { onclick: () => watchableCount.ref++ },
-                      textNode("++")
-                  ),
-                  d(
-                      "button",
-                      {
-                          onclick: () => {
-                              console.log(watchableCount);
-                              model.removeSelf();
-                              console.log(watchableCount);
-                          }
-                      },
-                      textNode("removeSelf")
-                  )
-              )
-            : d("div", {})
-    )
-);
+export type OptionalProps<T> = { [key in keyof T]?: RealOrWatchable<T[key]> };
 
-type RealOrWatchable<T> = T | Watchable<T>;
-
-document.createElement("div").onclick;
-
-// type OptionalProps<T> = { [key in keyof T]?: T[key] };
-//
-// declare global {
-//     namespace JSX {
-//         interface IntrinsicElements {
-//             [elemName: string]: OptionalProps<GlobalEventHandlers> & {
-//                 children?: ComponentModel[] | ComponentModel;
-//             };
-//         }
-//         interface Element extends ExistingComponentModel {}
-//     }
-// }
-
-type OptionalProps<T> = { [key in keyof T]?: RealOrWatchable<T[key]> };
-
-type TagNameToPropsMap = {
+export type TagNameToPropsMap = {
     [elemName in keyof HTMLElementTagNameMap]: OptionalProps<
         HTMLElementTagNameMap[elemName] & {
             children: ComponentModel[] | ComponentModel;
@@ -387,113 +284,27 @@ declare global {
     }
 }
 
-let React = { createElement: d };
-
-let modelJSX = (
-    <div>
-        <button onclick={() => (contentIsShowing.ref = !contentIsShowing.ref)}>
-            {watch([contentIsShowing], () =>
-                contentIsShowing.ref ? "Hide" : "Show"
-            )}
-        </button>
-        {watch([contentIsShowing], () =>
-            // !!!!!! this watch needs to be removed !!!!!!
-            // for some  reason, after removing all the components,
-            // reshowing runs this again
-            contentIsShowing.ref ? (
-                <div>
-                    <span>
-                        Count:{" "}
-                        {watch([watchableCount], () => "" + watchableCount.ref)}
-                    </span>
-                    {textNode(" ")}
-                    {textNode(
-                        watch([watchableCount], () => "" + watchableCount.ref)
-                    )}
-                    <button onclick={() => watchableCount.ref++}>++</button>
-                    <button
-                        onclick={() => {
-                            model.removeSelf();
-                        }}
-                    >
-                        removeSelf
-                    </button>
-                </div>
-            ) : (
-                d("div", {})
-            )
-        )}
-    </div>
-);
-
-let inputValue = new WatchableRef("");
-let managedInput = (
-    <div>
-        <input
-            value={inputValue.$ref}
-            oninput={e =>
-                (inputValue.ref = (e.currentTarget as HTMLInputElement).value)
-            }
-        />
-        {inputValue.$ref}
-    </div>
-);
-
-// let Toggleable = component();
-//
-// let toggleableTestModel = (
-//     <Toggleable>
-//         <div>visible</div>
-//     </Toggleable>
-// );
-
-// let model = d(
-//     "button",
-//     {
-//         onclick: (e: any) => {
-//             watchableCount.ref++;
-//         }
-//     },
-//     textNode("Value: "),
-//     textNode(watch<string>([watchableCount], () => "" + watchableCount.ref))
-//     /*
-//     watch<ComponentModel>([watchableCount], () =>
-//         textNode("Value: " + watchableCount.ref)
-//     )*/
-// );
-
-document.body.appendChild(model.node);
-document.body.appendChild(modelJSX.node);
-document.body.appendChild(managedInput.node);
-document.body.appendChild(
-    (
-        <button onclick={() => console.log(watchableCount, contentIsShowing)}>
-            log
-        </button>
-    ).node
-);
-
-type AddHandler<T extends Watchable<any>> = (
+export type AddHandler<T extends Watchable<any>> = (
     symbol: symbol,
     prevSymbol: symbol | undefined
 ) => void;
-type UpdateHandler<T extends Watchable<any>> = (
+export type UpdateHandler<T extends Watchable<any>> = (
     // when an item updates
     symbol: symbol
 ) => void;
-type MoveHandler<T extends Watchable<any>> = (
+export type MoveHandler<T extends Watchable<any>> = (
     // when an item moves
     prevSymbol: symbol | undefined,
     nextPrevSymbol: symbol | undefined
 ) => void;
-type RemoveHandler<T extends Watchable<any>> = (
+export type RemoveHandler<T extends Watchable<any>> = (
     symbol: symbol,
     prevSymbol: symbol | undefined
 ) => void;
 
 let symbolKey = (symbol: symbol) => (symbol as unknown) as string; // typescript does not allow symbols to be used as keys, so we pretend they are strings
 
-type WatchableListItem<T extends Watchable<any>> = {
+export type WatchableListItem<T extends Watchable<any>> = {
     prev?: WatchableListItem<T>; // should this be symbol instead?
     self: T;
     symbol: symbol;
@@ -501,7 +312,9 @@ type WatchableListItem<T extends Watchable<any>> = {
     removalHandler: () => void;
 };
 
-class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
+export class WatchableList<T extends Watchable<any>> extends WatchableBase<
+    void
+> {
     private __items: {
         [key: /*symbol*/ string]: WatchableListItem<T>;
     } = {};
@@ -629,7 +442,7 @@ class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
     }
 }
 
-function ListRender<T extends Watchable<any>>(props: {
+export function ListRender<T extends Watchable<any>>(props: {
     list: WatchableList<T>;
     children: (e: T, s: symbol) => JSX.Element;
     // index::
@@ -698,82 +511,11 @@ function ListRender<T extends Watchable<any>>(props: {
     return result;
 }
 
-function makeWatchablesFromBuiltins() {}
+export function makeWatchablesFromBuiltins() {}
 
-/*
-<ArrayRender array={watchablearray}>
-    {element => (
-        <li>
-            <input
-                value={element.$ref}
-                onInput={e =>
-                    (element.ref = e.currentTarget.value)
-                }
-            />
-        </li>
-    )}
-</ArrayRender>
-*/
-
-let updateCount = new WatchableRef(0);
-let globalValue = new WatchableRef("");
-
-type RecursiveWatchableList = WatchableList<WatchableList<any>>;
-
-function ArrayTest(list: RecursiveWatchableList) {
-    return (
-        <div>
-            <label>
-                Global Value:{" "}
-                <input
-                    oninput={e =>
-                        (globalValue.ref = (e.currentTarget! as HTMLInputElement).value)
-                    }
-                    value={globalValue.$ref}
-                />
-            </label>
-            <ul>
-                {ListRender({
-                    list,
-                    children: (element, symbol) => (
-                        <li>
-                            {ArrayTest(element)}
-                            <button
-                                onclick={() => {
-                                    list.remove(symbol);
-                                }}
-                            >
-                                x
-                            </button>
-                        </li>
-                    )
-                })}
-            </ul>
-            <button onclick={() => list.push(new WatchableList<any>())}>
-                +Elem
-            </button>
-        </div>
-    );
-}
-
-let mainList = new WatchableList<any>();
-
-mainList[watchable_watch](() => updateCount.ref++);
-
-document.body.appendChild(
-    (
-        <div>
-            Array Updates: {watch([updateCount], () => "" + updateCount.ref)}{" "}
-        </div>
-    ).node
-);
-document.body.appendChild(ArrayTest(mainList).node);
-
-// let counter = Component<{ count: number }>(data => d.div(data.count));
-
-class FakeEmitter<T extends Watchable<void> | undefined> extends WatchableBase<
-    void
-> {
+export class FakeEmitter<
+    T extends Watchable<void> | undefined
+> extends WatchableBase<void> {
     private __trueValue: T | undefined = undefined;
     private __removalHandler: () => void = () => undefined;
     get value(): T | undefined {
@@ -804,7 +546,7 @@ class FakeEmitter<T extends Watchable<void> | undefined> extends WatchableBase<
     }
 }
 
-class WatchableObject<
+export class WatchableObject<
     T extends { [key: string]: Watchable<void> | undefined }
 > extends WatchableBase<void> {
     [watchable_value](): void {}
@@ -854,7 +596,7 @@ class WatchableObject<
         let newValue = { removalHandler, fakeEmitter };
         this.__object[key] = newValue;
     }
-    get(key: keyof T): FakeEmitter<T[typeof key]> {
+    get<Q extends keyof T>(key: Q): FakeEmitter<T[Q]> {
         // return new ObjectValueGetter
         let value = this.__object[key];
         if (!value) {
@@ -885,238 +627,3 @@ class WatchableObject<
         return resObject;
     }
 }
-
-let demoWatchableObject = new WatchableObject({
-    a: new WatchableRef(3),
-    b: new WatchableRef(5)
-});
-
-document.body.appendChild(
-    (
-        <div>
-            <div>
-                a:{" "}
-                {watch(
-                    [demoWatchableObject.get("a")],
-                    () => "" + demoWatchableObject.get("a").value!.ref
-                )}
-                <button
-                    onclick={() => demoWatchableObject.get("a").value!.ref++}
-                >
-                    a++
-                </button>
-            </div>
-            <div>
-                b:{" "}
-                {watch([demoWatchableObject.get("b")], () =>
-                    demoWatchableObject.get("b").value
-                        ? "" + demoWatchableObject.get("b").value!.ref
-                        : "undefined"
-                )}
-                <button
-                    onclick={() => demoWatchableObject.get("b").value!.ref++}
-                >
-                    b++
-                </button>
-            </div>
-        </div>
-    ).node
-);
-
-type WatchableObjectThing = WatchableObject<{
-    string: WatchableRef<string>;
-    visible: WatchableRef<boolean>;
-    list: WatchableList<WatchableObjectThing>;
-    removeConfirmVisible: WatchableRef<false>;
-}>;
-
-let testWatchableObject: WatchableObjectThing = new WatchableObject({
-    string: new WatchableRef("item 1"),
-    visible: new WatchableRef(true),
-    list: new WatchableList(),
-    removeConfirmVisible: new WatchableRef(false)
-});
-
-function ListOneItem(obj: WatchableObjectThing, onRemove: () => void) {
-    let visible = obj.get("visible") as FakeEmitter<WatchableRef<boolean>>;
-    let list = obj.get("list") as FakeEmitter<
-        WatchableList<WatchableObjectThing>
-    >;
-    let string = obj.get("string") as FakeEmitter<WatchableRef<string>>;
-    let removeConfirmVisible = obj.get("removeConfirmVisible") as FakeEmitter<
-        WatchableRef<boolean>
-    >;
-    return (
-        <div>
-            <button onclick={() => (visible.value!.ref = !visible.value!.ref)}>
-                {watch([visible], () => (visible.value!.ref ? "Hide" : "Show"))}
-            </button>
-            {watch([removeConfirmVisible], () =>
-                !removeConfirmVisible.value!.ref ? (
-                    <button
-                        onclick={() => (removeConfirmVisible.value!.ref = true)}
-                    >
-                        Remove
-                    </button>
-                ) : (
-                    <span>
-                        Are you sure?{" "}
-                        <button onclick={() => onRemove()}>Remove</button>
-                        <button
-                            onclick={() =>
-                                (removeConfirmVisible.value!.ref = false)
-                            }
-                        >
-                            Keep
-                        </button>
-                    </span>
-                )
-            )}
-            {watch([visible], () =>
-                visible.value!.ref ? (
-                    <div>
-                        <input
-                            value={string.value!.ref}
-                            oninput={e =>
-                                (string.value!.ref = (e.currentTarget as HTMLInputElement).value)
-                            }
-                        />
-                        <ul>
-                            {ListRender({
-                                list: list.value!,
-                                children: (e, s) => (
-                                    <li>
-                                        {ListOneItem(e, () =>
-                                            list.value!.remove(s)
-                                        )}
-                                    </li>
-                                )
-                            })}
-                            <li>
-                                <button
-                                    onclick={() => {
-                                        list.value!.push(
-                                            new WatchableObject({
-                                                string: new WatchableRef(
-                                                    "item 1"
-                                                ),
-                                                visible: new WatchableRef(true),
-                                                list: new WatchableList(),
-                                                removeConfirmVisible: new WatchableRef(
-                                                    false
-                                                )
-                                            })
-                                        );
-                                    }}
-                                >
-                                    +item
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                ) : (
-                    undefined
-                )
-            )}
-        </div>
-    );
-}
-
-document.body.appendChild(
-    ListOneItem(testWatchableObject, () =>
-        alert("Cannot remove top level element")
-    ).node
-);
-
-document.body.appendChild(
-    (
-        <button
-            onclick={() =>
-                console.log(
-                    JSON.stringify(testWatchableObject, null, "\t"),
-                    testWatchableObject
-                )
-            }
-        >
-            Log WatchableObject
-        </button>
-    ).node
-);
-
-let buttonIsShowing = new WatchableRef(true);
-document.body.appendChild(
-    (
-        <div>
-            {watch([buttonIsShowing], () =>
-                buttonIsShowing.ref ? (
-                    <button
-                        onclick={() => {
-                            window.startHighlightUpdates();
-                            buttonIsShowing.ref = false;
-                        }}
-                    >
-                        highlight updates
-                    </button>
-                ) : (
-                    <div></div>
-                )
-            )}
-        </div>
-    ).node
-);
-
-function FunctionalComponent(props: { a: WatchableRef<string> }) {
-    return (
-        <div>
-            <input
-                value={props.a.$ref}
-                oninput={e =>
-                    (props.a.ref = (e.currentTarget as HTMLInputElement).value)
-                }
-            />
-            {props.a.$ref}
-        </div>
-    );
-}
-
-document.body.appendChild(
-    (
-        <FunctionalComponent
-            a={new WatchableRef("string goes here string  string string ")}
-        />
-    ).node
-);
-
-// <input nodecreated={node => node.value}/>
-
-/*
-
-=== Unforseen Challenge Room ===
-
-object.get("undefined") // ObjectValueGetter(realvalue: undefined)
-object.set("undefined", new WatchableRef(5)) // ObjectValueGetter(realvalue: 5*)
-// get(undefined) emits an event
-undefined.value.ref = 10
-// get(undefined emits an event)
-object.set("undefined", new WatchableRef(3)) // ObjectValueGetter(realvalue: 5*)
-// what happens here?
-// what about the old WatchableRef?
-// obviously, get(undefined) emits that it's 3 now
-// but what if watchableref was an object
-
-// ok the above shouldn't* be a problem
-// because you should have to watch the outer
-// object which will make you unmount anything
-// inside if it changes
-
-let data = watchable({a: {b: c}});
-
-<Component>
-
-watch([data.a], () => <div>
-    a is:
-</div>)
-
-</Component>
-
-*/
