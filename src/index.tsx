@@ -243,6 +243,9 @@ class WatchableRef<T> extends WatchableBase<void> {
     }
     [watchable_setup]() {}
     [watchable_cleanup]() {}
+    toJSON() {
+        return this.ref;
+    }
 }
 
 function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
@@ -561,9 +564,13 @@ class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
         };
         if (!beforeItem) {
             this.__start = resultItem;
+        } else {
+            beforeItem.next = resultItem;
         }
         if (!nextItem) {
             this.__end = resultItem;
+        } else {
+            nextItem.prev = resultItem;
         }
         this.__items[symbolKey(itemSymbol)] = resultItem;
 
@@ -614,6 +621,11 @@ class WatchableList<T extends Watchable<any>> extends WatchableBase<void> {
             currentItem = currentItem.next;
             i++;
         }
+    }
+    toJSON() {
+        let res: T[] = [];
+        this.forEach(i => res.push(i));
+        return res;
     }
 }
 
@@ -783,6 +795,13 @@ class FakeEmitter<T extends Watchable<void> | undefined> extends WatchableBase<
     [watchable_cleanup](): void {
         this.__removalHandler();
     }
+    toJSON() {
+        return this.__trueValue
+            ? (this.__trueValue as any).toJSON
+                ? (this.__trueValue as any).toJSON()
+                : undefined
+            : undefined;
+    }
 }
 
 class WatchableObject<
@@ -855,6 +874,15 @@ class WatchableObject<
         if (this.__object[key]) {
             this.__object[key].fakeEmitter; // !!!!!!!!!!!!! tell fakeemitter it should delete once all its watchers are cleared
         }
+    }
+    toJSON() {
+        let resObject: {
+            [key in keyof T]?: FakeEmitter<T[key]>;
+        } = {};
+        Object.keys(this.__object).forEach(
+            key => (resObject[key as keyof T] = this.__object[key].fakeEmitter)
+        );
+        return resObject;
     }
 }
 
@@ -997,6 +1025,21 @@ function ListOneItem(obj: WatchableObjectThing, onRemove: () => void) {
 document.body.appendChild(
     ListOneItem(testWatchableObject, () =>
         alert("Cannot remove top level element")
+    ).node
+);
+
+document.body.appendChild(
+    (
+        <button
+            onclick={() =>
+                console.log(
+                    JSON.stringify(testWatchableObject, null, "\t"),
+                    testWatchableObject
+                )
+            }
+        >
+            Log WatchableObject
+        </button>
     ).node
 );
 
