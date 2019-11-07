@@ -11,37 +11,37 @@ import {
 } from "../src";
 
 type JSONObject = {
-    type: "Object";
-    collapsed: boolean;
+    type: WatchableRef<"Object">;
+    collapsed: WatchableRef<boolean>;
     value: WatchableList<JSONData>;
     key: WatchableRef<string>;
 };
 
 type JSONArray = {
-    type: "Array";
-    collapsed: boolean;
+    type: WatchableRef<"Array">;
+    collapsed: WatchableRef<boolean>;
     value: WatchableList<JSONData>;
     key: WatchableRef<string>;
 };
 
 type JSONString = {
-    type: "String";
-    collapsed: boolean;
-    value: string;
+    type: WatchableRef<"String">;
+    collapsed: WatchableRef<boolean>;
+    value: WatchableRef<string>;
     key: WatchableRef<string>;
 };
 
 type JSONBoolean = {
-    type: "Boolean";
-    collapsed: boolean;
-    value: boolean;
+    type: WatchableRef<"Boolean">;
+    collapsed: WatchableRef<boolean>;
+    value: WatchableRef<boolean>;
     key: WatchableRef<string>;
 };
 
 type JSONNumber = {
-    type: "Number";
-    collapsed: boolean;
-    value: number;
+    type: WatchableRef<"Number">;
+    collapsed: WatchableRef<boolean>;
+    value: WatchableRef<number>;
     key: WatchableRef<string>;
 };
 
@@ -50,10 +50,22 @@ type JSONData = WatchableObject<
 >;
 
 function JSONNode(node: JSONData) {
-    let type = node.get("type").value;
-    let collapsed = node.get("collapsed");
-    let value = node.get("value");
-    let key = node.get("key");
+    let type = node.v.type.value;
+    let collapsed = node.v.collapsed;
+    let value = node.v.value;
+    let key = node.v.key;
+    // watch([node.v.type, node.v.collapsed], { getjson: node }, nodejson => {
+    //     /*nodejson will be an object with each item at its .ref*/
+    //     /*that doesn't make sense but it would work*/
+    // });
+    // what about if we did a custom compiler
+    // in babel, remap key.value.$ref to watch([key.value], () => key.value.ref)
+    // or key.value.$ref + "-" + value.value.$ref
+    // watch([key.value, value.value], () => key.value.ref + "-" + value.value.ref)
+    // babel will see the $ sign inside {} brackets and wrap the whole {} in a watch statement
+    if (node.v.type.value.ref === "String") {
+        node.v.type.value.ref;
+    }
     return (
         <div>
             {watch([key], () =>

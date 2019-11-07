@@ -596,6 +596,17 @@ export class WatchableObject<
         let newValue = { removalHandler, fakeEmitter };
         this.__object[key] = newValue;
     }
+    get v(): { [key in keyof T]: FakeEmitter<T[key]> } {
+        return new Proxy(
+            {},
+            {
+                get: (q, v) => {
+                    if (typeof v === "string") return this.get(v as keyof T);
+                    return (this as any)[v];
+                }
+            }
+        ) as { [key in keyof T]: FakeEmitter<T[key]> };
+    }
     get<Q extends keyof T>(key: Q): FakeEmitter<T[Q]> {
         // return new ObjectValueGetter
         let value = this.__object[key];
