@@ -149,6 +149,8 @@ export const d = (
     // bind value changes to watch
 };
 
+export let React = { createElement: d };
+
 // type RealOrWatchable<T> = T | Watchable<T>;
 
 const watchable_setup = Symbol("setup");
@@ -221,7 +223,7 @@ export class WatchableRef<T> extends WatchableBase<void> {
         return this[watchable_ref];
     }
     get $ref() {
-        return watch([this], () => this[watchable_ref]);
+        return this.ref; // same as .ref but babel will surround with watch()
     }
     set ref(nv: T) {
         this[watchable_ref] = nv;
@@ -518,10 +520,13 @@ export class FakeEmitter<
 > extends WatchableBase<void> {
     private __trueValue: T | undefined = undefined;
     private __removalHandler: () => void = () => undefined;
-    get value(): T | undefined {
+    get ref(): T | undefined {
         return this.__trueValue;
     }
-    set value(value: T | undefined) {
+    get $ref() {
+        return this.ref;
+    }
+    set ref(value: T | undefined) {
         this.__removalHandler();
         this.__trueValue = value;
         if (value)
@@ -587,7 +592,7 @@ export class WatchableObject<
         // and
         // {}
         let fakeEmitter = new FakeEmitter<T[typeof key]>();
-        fakeEmitter.value = value;
+        fakeEmitter.ref = value;
         let removalHandler = fakeEmitter[watchable_watch](() => {
             // !!!!!!!! emit create event
             this[watchable_emit]();
@@ -618,7 +623,7 @@ export class WatchableObject<
     }
     set(key: keyof T, value: T[typeof key]) {
         if (this.__object[key]) {
-            this.__object[key].fakeEmitter.value = value; // fakeemitter will handle event emitting
+            this.__object[key].fakeEmitter.ref = value; // fakeemitter will handle event emitting
         } else {
             this.create(key, value);
         }

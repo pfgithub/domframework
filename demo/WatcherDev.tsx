@@ -80,8 +80,6 @@ document.createElement("div").onclick;
 //     }
 // }
 
-let React = { createElement: d };
-
 let modelJSX = (
     <div>
         <button onclick={() => (contentIsShowing.ref = !contentIsShowing.ref)}>

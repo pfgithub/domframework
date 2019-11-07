@@ -20,9 +20,10 @@ return <div>{<p>{key.value.$ref + "-" + value.value.$ref + cb(name.$ref)}</p>}</
 
 // babylon 7 transformer
 
-export default function(babel) {
-    const { types: t } = babel;
-
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+module.exports.default = function({ types: t }) {
     return {
         name: "ast-transform", // not required
         visitor: {
@@ -60,7 +61,7 @@ export default function(babel) {
             }
         }
     };
-}
+};
 
 // export function a(context) {
 //   return {

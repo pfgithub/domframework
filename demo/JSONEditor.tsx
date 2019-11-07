@@ -7,7 +7,8 @@ import {
     ListRender,
     watchable_watch,
     WatchableObject,
-    FakeEmitter
+    FakeEmitter,
+    React
 } from "../src";
 
 type JSONObject = {
