@@ -32,20 +32,17 @@ export default function(babel) {
                     JSXExpressionContainer(path) {
                         path.skip();
                     },
-                    // maybe skip in functions? no reason for callbacks to become watchable.
-                    // callExpression // if equals watch // path.skip()
                     CallExpression(path) {
                         if (path.node.callee.type === "Identifier") {
                             if (path.node.callee.name === "watch") {
-                                path.skip();
+                                path.skip(); // ignore $ usage in watches // what's the point of this? if you're writing watch, you don't need $.
                             }
                         }
                     },
                     MemberExpression(path) {
-                        //path.skip(); // what if you said string.$ref.toLowerCase()
                         if (path.node.property.type === "Identifier") {
                             if (path.node.property.name === "$ref") {
-                                watchables.push(path.node.object);
+                                watchables.push(path.node.object); // TODO dedupe
                                 path.node.property.name = "ref";
                             }
                         }
@@ -60,11 +57,6 @@ export default function(babel) {
                     t.arrayExpression(watchables),
                     t.arrowFunctionExpression([], path.node.expression)
                 ]);
-                // t.callExpression(
-                //     t.identifier("watch"),
-                //     t.arrayExpression({ elements: watchables }),
-                //     t.arrowFunctionExpression(/*body: path.node*/)
-                // );
             }
         }
     };
