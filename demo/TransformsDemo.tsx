@@ -17,8 +17,15 @@ export function Counter() {
     let counter = new WatchableRef(0);
     return (
         <div>
-            Count: <button onclick={() => counter.ref--}>-</button>{" "}
-            {"" + counter.$ref} <button onclick={() => counter.ref++}>+</button>
+            Count: <button onclick={() => counter.ref--}>--</button>{" "}
+            {"" + counter.$ref}{" "}
+            <button
+                onclick={() =>
+                    counter.ref >= 10 ? (counter.ref += 2) : counter.ref++
+                }
+            >
+                {counter.$ref >= 10 ? "+=2" : "++"}
+            </button>
         </div>
     );
 }

@@ -15,8 +15,11 @@ watch; // TODO fix;
 
 import * as td from "./TransformsDemo";
 import "../src/drawBoxAroundElement";
+import { ToggleVisible } from "./ToggleVisible";
 
-document.body.appendChild(td.Counter().node);
+document.body.appendChild(ToggleVisible(() => td.Counter()).node);
+document.body.appendChild(ToggleVisible(() => td.Counter()).node);
+document.body.appendChild(ToggleVisible(() => td.Counter()).node);
 document.body.appendChild(td.Counter().node);
 document.body.appendChild(td.Counter().node);
 
