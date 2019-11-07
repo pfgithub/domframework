@@ -1,3 +1,5 @@
 import * as td from "./TransformsDemo";
 
-td.load();
+document.body.appendChild(td.Counter().node);
+document.body.appendChild(td.Counter().node);
+document.body.appendChild(td.Counter().node);
