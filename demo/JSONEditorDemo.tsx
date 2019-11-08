@@ -24,7 +24,10 @@ function Node({value: , updateSelf: }){
 // can we emulate that with babel?
 // have watch appear automatically
 // but have typescript think the objects are real?
-// that way we don't have these issues
+// that way we don't have these issues\
+
+
+// watch([obj.a, obj.b], {get: obj}, obj => obj.a + obj.b)
 */
 
 type JSONStringNode = {
