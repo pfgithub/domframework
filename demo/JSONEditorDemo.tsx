@@ -13,6 +13,20 @@ import {
 
 watch;
 
+/*
+
+React Hooks:
+
+function Node({value: , updateSelf: }){
+
+}
+
+// can we emulate that with babel?
+// have watch appear automatically
+// but have typescript think the objects are real?
+// that way we don't have these issues
+*/
+
 type JSONStringNode = {
     type: WatchableRef<"string">;
     value: WatchableRef<string>;
