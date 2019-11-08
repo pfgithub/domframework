@@ -27,7 +27,61 @@ function Node({value: , updateSelf: }){
 // that way we don't have these issues\
 
 
-// watch([obj.a, obj.b], {get: obj}, obj => obj.a + obj.b)
+// watch(
+[obj.a.ref, obj.b.ref],
+{get: () => obj.a.ref.ref, obj.b.ref.ref},
+obj => obj.a + obj.b
+)
+
+would it be possible to use a babel transform to rewrite things into watchable
+
+let $watchableRef = createWatchableRef(3); //  let watchableRef = new WatchableRef(3);
+
+$watchableRef++; //  watchableRef.ref++;
+
+let $watchableObject = createWatchableObject(
+    {a: createWatchableRef(3), b: createWatchableRef(4)}
+);
+
+$watchableObject.a++ // watchableObject.get("a").ref.ref++
+
+<div>a: {$watchableObject.a}</div> // watch([watchableObject.get("a").ref], () => watchableObject.get("a").ref.ref);
+
+<div>{
+$watchableObject.a === "one" ? $watchableObject.b : undefined;
+// watch([watchableObject.a.ref], () => watchableObject.a.ref.ref)
+}</div>
+
+//////////////////////////////////////////////////////////////////////////////////
+
+let $object = c_object<
+    | {state: "waiting"}
+    | {state: "loaded", value: number}
+    | {state: "error", message: string}
+>({state: "waiting"});
+
+document.body.appendChild((
+
+<div>
+{
+    $object.state === "waiting"
+    ? <div>Waiting...</div>
+    : $object.state === "loaded"
+    ? <div>Loaded. Value: {""+$object.value}</div>
+    : $object.state === "error"
+    ? <div>Error! {$object.message}</div>
+    : <div>never</div>
+}
+Set State:
+<button onclick={() => $object = {state: "waiting"}}>Error</button>
+<button onclick={() => $object = {state: "loaded", value: 25}}>Loaded</button>
+<button onclick={() => $object = {state: "error", message: "A bad happened"}}>Error</button>
+</div>
+
+).node);
+
+//////////////////////////////////////////////////////////////////////////////////
+
 */
 
 type JSONStringNode = {
