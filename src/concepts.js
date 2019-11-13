@@ -1,3 +1,37 @@
+/*
+
+code:
+
+<div>value: {"" + $a.value.toString($number)}</div>
+
+output:
+
+<div>value: {watch([$a.$get("value").$get("toString")], () => $a.$get("value").$get("toString").ref($number))}</div>
+
+usage:
+
+$a.get("value") :: WatchableRef(0)
+.get("tostring").ref :: WatchableRef(0).ref.toString
+[watchable_watch] :: WatchableRef(0).watch => ref.toString
+
+
+function TodoList(){
+
+let $list = []; // -> let $list = create([]);
+
+return <ul>
+<ListRender list={$list}>
+{($item, symbol) => <li>
+<Input type="text" value={$item} /> // -> value={$item.ref} // but in this situation we want to bind. $value={$item} for two way binding maybe. that loses ts support.
+</li>} // no action
+</ListRender>
+<li><button onclick={() => $list.push("v")}>+Add Item</button></li> // no action necessary, things inside functions are ignored
+</ul>
+
+}
+
+*/
+
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
@@ -41,6 +75,10 @@ module.exports.default = function({ types: t }) {
                                     path.skip(); //  this is on exit so this may  be pointless
                                     console.log("did replace");
                                 }
+                                // if(is last) add .ref
+                                // last means last before a fn call
+                                // <>{a.b.toString().c + "d"}</>
+                                // -> a.$get(b).$get(toString).ref().c + "d"
                             }
                             // add watch as needed
                         }
