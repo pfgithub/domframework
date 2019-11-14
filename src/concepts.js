@@ -15,6 +15,13 @@ $a.get("value") :: WatchableRef(0)
 [watchable_watch] :: WatchableRef(0).watch => ref.toString
 
 
+function Number({$num: $num}){
+
+return <div><button onclick={() => setNum(num + 1)}>+</button> {""+$num}</div>
+
+}
+
+
 function TodoList(){
 
 let $list = []; // -> let $list = create([]);
@@ -36,25 +43,50 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 module.exports.default = function({ types: t }) {
+    let $call = v =>
+        t.memberExpression(t.identifier("$"), t.identifier("" + v));
     return {
-        name: "ast-transform", // not required
+        name: "ast-transform",
         visitor: {
+            VariableDeclarator(path) {
+                if (path.node.id.name.startsWith("$")) {
+                    path.node.init = t.callExpression($call`createWatchable`, [
+                        path.node.init
+                    ]);
+                }
+            },
             JSXExpressionContainer(path) {
                 let watchables = [];
                 path.traverse({
                     JSXExpressionContainer(path) {
                         path.skip();
                     },
-                    MemberExpression: {
-                        exit(path) {
+                    exit(path) {
+                        if (path.node.type === "Identifier") {
+                            if (path.node.name.startsWith("$")) {
+                                path.node.isWrapped = true;
+                            }
+                        }
+                        if (path.node.type === "MemberExpression") {
                             console.log(
                                 "found memberexpression",
-                                path.node.object.name
+                                path.node.object
                             );
+                            if (
+                                path.node.object.type === "MemberExpression" &&
+                                path.node.object.property.name === "$ref"
+                            ) {
+                                console.log("unwrap", path.node.object);
+                                path.node.object = path.node.object.object;
+                            }
                             if (
                                 (path.node.object.type === "Identifier" &&
                                     path.node.object.name.startsWith("$")) ||
                                 (path.node.object.type === "CallExpression" &&
+                                    path.node.object.callee.type ===
+                                        "MemberExpression" &&
+                                    path.node.object.callee.property.type ===
+                                        "Identifier" &&
                                     path.node.object.callee.property.name ===
                                         "$get")
                             ) {
@@ -72,7 +104,7 @@ module.exports.default = function({ types: t }) {
                                             [t.stringLiteral(property.name)]
                                         )
                                     );
-                                    path.skip(); //  this is on exit so this may  be pointless
+                                    path.node.isWrapped = true;
                                     console.log("did replace");
                                 }
                                 // if(is last) add .ref
@@ -82,6 +114,33 @@ module.exports.default = function({ types: t }) {
                             }
                             // add watch as needed
                         }
+
+                        if (path.node.isWrapped) {
+                            path.replaceWith(
+                                t.memberExpression(
+                                    path.node,
+                                    t.identifier("$ref")
+                                )
+                            );
+                            path.skip();
+                        }
+                    }
+                });
+                path.traverse({
+                    // traverse once again and add .ref to
+                    JSXExpressionContainer(path) {
+                        path.skip();
+                    },
+                    Function(path) {
+                        path.skip();
+                    },
+                    MemberExpression(path) {
+                        if (
+                            path.node.property.type === "Identifier" &&
+                            path.node.property.name === "$ref"
+                        ) {
+                            watchables.push(path.node.object);
+                        }
                     }
                 });
 
@@ -89,7 +148,7 @@ module.exports.default = function({ types: t }) {
                     // nothing to do. don't skip.
                     return;
                 }
-                path.node.expression = t.callExpression(t.identifier("watch"), [
+                path.node.expression = t.callExpression($call`watch`, [
                     t.arrayExpression(watchables),
                     t.arrowFunctionExpression([], path.node.expression)
                 ]);
