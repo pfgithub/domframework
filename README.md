@@ -99,3 +99,34 @@ svelte:
 
 <p>{a} + {b} = {a + b}</p>
 ```
+
+# concepts
+
+quad state loading
+
+```
+type Loader<T> = {state: "init"} | {state: "lodaing", progress?: number} | {state: "loaded", value: T} | {state: "error", message: string};
+
+let $loader: Loader<number> = {state: "init"};
+
+// when the event is emitted for state changing, progress needs to have changed already
+// don't emit events one at a time, change everything and emit on next tick
+
+<div>
+{
+$loader.state === "init"
+? <div><button onclick={() => $loader = {state: "loading", progress: 0}}>Click to Start Load</button></div>
+:
+$loader.state === "loading"
+? <span>Progress: {loader.progress*100}%. <button>Cancel request</buton></span>
+:
+$loader.state === "loaded"
+? <span>{loader.value}</span>
+:
+$loader.state === "error"
+? <span>An error occured. <button onclick={() => $loader = {state: "loading", progress: 0}}>Retry</button></span>
+: <span>never</span>
+}
+</div>
+
+```
