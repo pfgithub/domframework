@@ -1,4 +1,4 @@
-"dmf";
+"dmf prefix $";
 
 import { React } from "../src";
 import { $ } from "../src/v2";

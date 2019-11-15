@@ -49,17 +49,18 @@ module.exports.default = function({ types: t }) {
         name: "ast-transform",
         visitor: {
             DirectiveLiteral(path) {
-                if (path.node.value === "dmf") {
+                if (path.node.value.startsWith("dmf prefix ")) {
                     let file = path.findParent(path => path.isProgram());
-                    file.__uses_dmf = true;
+                    file.__dmf_prefix = path.node.value.substr(11);
                 }
             },
             VariableDeclarator(path) {
-                if (!path.findParent(path => path.isProgram()).__uses_dmf)
-                    return;
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
                 if (
                     path.node.id.type === "Identifier" &&
-                    path.node.id.name.startsWith("$")
+                    path.node.id.name.startsWith(prefix)
                 ) {
                     path.node.init = t.callExpression($call`createWatchable`, [
                         path.node.init
@@ -67,8 +68,9 @@ module.exports.default = function({ types: t }) {
                 }
             },
             JSXExpressionContainer(path) {
-                if (!path.findParent(path => path.isProgram()).__uses_dmf)
-                    return;
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
                 let watchables = [];
                 path.traverse({
                     JSXExpressionContainer(path) {
@@ -76,7 +78,7 @@ module.exports.default = function({ types: t }) {
                     },
                     exit(path) {
                         if (path.node.type === "Identifier") {
-                            if (path.node.name.startsWith("$")) {
+                            if (path.node.name.startsWith(prefix)) {
                                 path.node.isWrapped = true;
                             }
                         }
@@ -94,7 +96,7 @@ module.exports.default = function({ types: t }) {
                             }
                             if (
                                 (path.node.object.type === "Identifier" &&
-                                    path.node.object.name.startsWith("$")) ||
+                                    path.node.object.name.startsWith(prefix)) ||
                                 (path.node.object.type === "CallExpression" &&
                                     path.node.object.callee.type ===
                                         "MemberExpression" &&
