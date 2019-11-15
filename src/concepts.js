@@ -48,14 +48,27 @@ module.exports.default = function({ types: t }) {
     return {
         name: "ast-transform",
         visitor: {
+            DirectiveLiteral(path) {
+                if (path.node.value === "dmf") {
+                    let file = path.findParent(path => path.isProgram());
+                    file.__uses_dmf = true;
+                }
+            },
             VariableDeclarator(path) {
-                if (path.node.id.name.startsWith("$")) {
+                if (!path.findParent(path => path.isProgram()).__uses_dmf)
+                    return;
+                if (
+                    path.node.id.type === "Identifier" &&
+                    path.node.id.name.startsWith("$")
+                ) {
                     path.node.init = t.callExpression($call`createWatchable`, [
                         path.node.init
                     ]);
                 }
             },
             JSXExpressionContainer(path) {
+                if (!path.findParent(path => path.isProgram()).__uses_dmf)
+                    return;
                 let watchables = [];
                 path.traverse({
                     JSXExpressionContainer(path) {

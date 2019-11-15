@@ -1,3 +1,5 @@
+"dmf";
+
 import {
     WatchableRef,
     d,
@@ -11,34 +13,18 @@ import {
     React
 } from "../src";
 
-watch; // TODO fix;
+import { $ } from "../src/v2";
 
-import * as td from "./TransformsDemo";
-import "../src/drawBoxAroundElement";
-import { ToggleVisible } from "./ToggleVisible";
+$;
 
-document.body.appendChild(ToggleVisible(() => td.Counter()).node);
-document.body.appendChild(ToggleVisible(() => td.Counter()).node);
-document.body.appendChild(ToggleVisible(() => td.Counter()).node);
-document.body.appendChild(td.Counter().node);
-document.body.appendChild(td.Counter().node);
+let $num = 5;
 
-let buttonIsShowing = new WatchableRef(true);
 document.body.appendChild(
     (
         <div>
-            {buttonIsShowing.$ref ? (
-                <button
-                    onclick={() => {
-                        window.startHighlightUpdates();
-                        buttonIsShowing.ref = false;
-                    }}
-                >
-                    Highlight Updates
-                </button>
-            ) : (
-                <div />
-            )}
+            <button onclick={() => --$num}>--</button>
+            {$num}
+            <button onclick={() => ++$num}>++</button>
         </div>
-    ).node // that doesn't make any sense. what if you want to append a text node?
+    ).node
 );

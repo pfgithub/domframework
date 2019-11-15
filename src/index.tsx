@@ -49,8 +49,8 @@ export function createComponent(
     c: ComponentModel,
     insert: (node: Node) => void
 ): { finalNode: Node; removeSelf: () => void } {
-    if (typeof c === "string") {
-        let textNode = document.createTextNode(c);
+    if (typeof c !== "object") {
+        let textNode = document.createTextNode("" + c);
         insert(textNode);
         window.onNodeUpdate(textNode);
         return { finalNode: textNode, removeSelf: () => textNode.remove() };
@@ -219,13 +219,10 @@ export class WatchableRef<T> extends WatchableBase<void> {
         super();
         this[watchable_ref] = data;
     }
-    get ref() {
+    get $ref() {
         return this[watchable_ref];
     }
-    get $ref() {
-        return this.ref; // same as .ref but babel will surround with watch()
-    }
-    set ref(nv: T) {
+    set $ref(nv: T) {
         this[watchable_ref] = nv;
         this[watchable_emit]();
     }
@@ -235,7 +232,7 @@ export class WatchableRef<T> extends WatchableBase<void> {
     [watchable_setup]() {}
     [watchable_cleanup]() {}
     toJSON() {
-        return this.ref;
+        return this.$ref;
     }
 }
 
@@ -323,9 +320,9 @@ export class WatchableList<T extends Watchable<any>> extends WatchableBase<
     private __start?: WatchableListItem<T>;
     private __end?: WatchableListItem<T>;
 
-    private __addHandlers: (AddHandler<T>)[] = [];
-    private __updateHandlers: (UpdateHandler<T>)[] = [];
-    private __removeHandlers: (RemoveHandler<T>)[] = [];
+    private __addHandlers: AddHandler<T>[] = [];
+    private __updateHandlers: UpdateHandler<T>[] = [];
+    private __removeHandlers: RemoveHandler<T>[] = [];
 
     [watchable_value](): void {}
     [watchable_setup](): void {}

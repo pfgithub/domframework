@@ -9,7 +9,7 @@ import {
 type CreatedWatchable<T> = T extends object
     ? { [key in keyof T]: CreatedWatchable<T[key]> }
     : WatchableRef<T>;
-let $ = {
+export let $ = {
     // functions here are only to be auto called by the compiler
     createWatchable<T>(obj: T): CreatedWatchable<T> {
         if (typeof obj === "object") {
@@ -34,33 +34,36 @@ let $ = {
     }
 };
 
+// let $a = $.createWatchable({ a: "b" });
+// document.body.appendChild(
+//     (<div>{$.watch([$a.$get("a")], () => $a.$get("a").$ref)}</div>).node
+// );
+
 /// ------
 
-let $a = { a: "b" };
-document.body.appendChild((<div>{$a.a}</div>).node);
-
-document.body.appendChild(
-    (<button onclick={e => $a.b++}>{$a.b++}</button>).node
-);
+// let ﹼa = { a: "b" }; // possible unicode character (don't use this, it would require special editor support and that's farther than I want to go. unless an eslit modification could be made to convert $watch$ to ﹼ or something)
+// document.body.appendChild((<div>{ﹼa.a}</div>).node);
+//
+// let $a = { a: "b" };
+// document.body.appendChild((<div>{$a.a}</div>).node);
+//
+// document.body.appendChild(
+//     (<button onclick={e => $a.b++}>{$a.b++}</button>).node
+// );
 
 /// ------
 // ->
 
-let $a = $.createWatchable({ a: "b" });
-document.body.appendChild(
-    (<div>{$.watch([$a.$get("a")], () => $a.$get("a").$ref)}</div>).node
-);
-
-let $a = $.createWatchable({ a: "b" });
-document.body.appendChild(
-    (<div>{$.watch([$a.$get("a")], () => $a.$get("a").$ref)}</div>).node
-);
-
-let $a = $.createWatchable(5); // typescript will actually know about these types
-document.body.appendChild(
-    (
-        <button onclick={e => $a.$get("b").$ref++}>
-            {$.watch([$a.$get("b")], () => $a.$get("b").$ref++)}
-        </button>
-    ).node
-);
+// let $a = $.createWatchable({ a: "b" });
+// document.body.appendChild(
+//     (<div>{$.watch([$a.$get("a")], () => $a.$get("a").$ref)}</div>).node
+// );
+//
+// let $a = $.createWatchable(5); // typescript will actually know about these types
+// document.body.appendChild(
+//     (
+//         <button onclick={e => $a.$get("b").$ref++}>
+//             {$.watch([$a.$get("b")], () => $a.$get("b").$ref++)}
+//         </button>
+//     ).node
+// );

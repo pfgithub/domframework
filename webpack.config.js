@@ -19,7 +19,7 @@ module.exports = {
                         "@babel/plugin-syntax-dynamic-import",
                         "@babel/plugin-proposal-class-properties",
                         "@babel/plugin-transform-react-jsx",
-                        "./src/babelplugin.wip.js"
+                        "./src/concepts.js"
                     ]
                 }
             }
