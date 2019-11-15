@@ -7,6 +7,8 @@ $;
 React;
 
 let $num = 5;
+let $x = 0;
+let $y = 0;
 
 document.body.appendChild(
     (
@@ -14,6 +16,15 @@ document.body.appendChild(
             <button onclick={() => --$num}>--</button>
             {$num}
             <button onclick={() => ++$num}>++</button>
+            <div
+                className="box"
+                onmousemove={e => {
+                    $x = e.clientX;
+                    $y = e.clientY;
+                }}
+            >
+                Mouse position: x: {$x}, y: {$y}
+            </div>
         </div>
     ).node
 );

@@ -37,6 +37,24 @@ return <ul>
 
 }
 
+-----
+
+
+"dmf prefix $";
+
+let $obj = {
+    mode: "a",
+    a: 3
+};
+
+$obj.c = "test";
+
+<div>{$obj.c = "test"}</div>
+// <- should be $obj.$get("c").$ref but babel errors while setting it to $obj.$get before it has gotten to .ref
+
+let o=
+<div>{$obj}</div>
+
 */
 
 Object.defineProperty(exports, "__esModule", {
@@ -68,6 +86,17 @@ module.exports.default = function({ types: t }) {
                 }
             },
             JSXExpressionContainer(path) {
+                /*
+                ---
+                it turns out sometimes we need to do things outside of
+                jsxexpresisoncontainer.
+                consider:
+                let $o = 5;
+                $o++
+                this should be $o.$ref++
+                but because it's not in a jsxexpressioncontainer, that doesn't happen
+                ---
+                */
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
                 if (!prefix) return;
@@ -77,9 +106,16 @@ module.exports.default = function({ types: t }) {
                         path.skip();
                     },
                     exit(path) {
+                        let wrap = node => {
+                            return t.memberExpression(
+                                node,
+                                t.identifier("$ref")
+                            );
+                        };
                         if (path.node.type === "Identifier") {
                             if (path.node.name.startsWith(prefix)) {
-                                path.node.isWrapped = true;
+                                path.replaceWith(wrap(path.node));
+                                path.skip();
                             }
                         }
                         if (path.node.type === "MemberExpression") {
@@ -110,16 +146,18 @@ module.exports.default = function({ types: t }) {
                                 if (property.type === "Identifier") {
                                     //property.name = "test";
                                     path.replaceWith(
-                                        t.callExpression(
-                                            // maybe  we can tell it to not check this?
-                                            t.memberExpression(
-                                                path.node.object,
-                                                t.identifier("$get")
-                                            ),
-                                            [t.stringLiteral(property.name)]
+                                        wrap(
+                                            t.callExpression(
+                                                // maybe  we can tell it to not check this?
+                                                t.memberExpression(
+                                                    path.node.object,
+                                                    t.identifier("$get")
+                                                ),
+                                                [t.stringLiteral(property.name)]
+                                            )
                                         )
                                     );
-                                    path.node.isWrapped = true;
+                                    path.skip();
                                     console.log("did replace");
                                 }
                                 // if(is last) add .ref
@@ -129,20 +167,10 @@ module.exports.default = function({ types: t }) {
                             }
                             // add watch as needed
                         }
-
-                        if (path.node.isWrapped) {
-                            path.replaceWith(
-                                t.memberExpression(
-                                    path.node,
-                                    t.identifier("$ref")
-                                )
-                            );
-                            path.skip();
-                        }
                     }
                 });
                 path.traverse({
-                    // traverse once again and add .ref to
+                    // traverse once again and add .ref to watchables
                     JSXExpressionContainer(path) {
                         path.skip();
                     },
