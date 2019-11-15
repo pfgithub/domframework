@@ -130,10 +130,11 @@ module.exports.default = function({ types: t }) {
                 }
             },
 
-            DirectiveLiteral(path) {
-                if (path.node.value.startsWith("dmf prefix ")) {
+            Directive(path) {
+                if (path.node.value.value.startsWith("dmf prefix ")) {
                     let file = path.findParent(path => path.isProgram());
-                    file.__dmf_prefix = path.node.value.substr(11);
+                    file.__dmf_prefix = path.node.value.value.substr(11);
+                    path.remove();
                 }
             },
             VariableDeclarator(path) {
