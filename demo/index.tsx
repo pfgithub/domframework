@@ -1,21 +1,10 @@
 "dmf";
 
-import {
-    WatchableRef,
-    d,
-    textNode,
-    watch,
-    WatchableList,
-    ListRender,
-    watchable_watch,
-    WatchableObject,
-    FakeEmitter,
-    React
-} from "../src";
-
+import { React } from "../src";
 import { $ } from "../src/v2";
 
 $;
+React;
 
 let $num = 5;
 
