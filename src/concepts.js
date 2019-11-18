@@ -55,6 +55,13 @@ $obj.c = "test";
 let o=
 <div>{$obj}</div>
 
+
+----------- CASES TO HANDLE
+
+({$a} = {$a: $b}) => $a;
+let fntest = ($a = $b) => $a + 2;
+let o = {$a: "test"} // maybe this should error?
+
 */
 
 Object.defineProperty(exports, "__esModule", {

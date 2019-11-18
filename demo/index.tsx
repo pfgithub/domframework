@@ -45,7 +45,11 @@ document.body.appendChild(
                                 ($obj = {
                                     mode: "b",
                                     b: 12
-                                }) /* should but doesn't compile to  $obj.$ref = { ... } */
+                                }) // this diffs ::
+                            // obj.mode = new WatchableRef(b)
+                            // obj.b = new WatchableRef(12)
+                            // how does that work?
+                            // the fakeemitter emits events still when it changes
                         }
                     >
                         b mode
