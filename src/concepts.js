@@ -81,12 +81,11 @@ module.exports.default = function({ types: t }) {
                         .__dmf_prefix;
                     if (!prefix) return;
 
-                    if (
-                        matches(path.node.name, prefix) &&
-                        (path.parent.type === "VariableDeclarator"
-                            ? path.parent.id !== path.node
-                            : true)
-                    ) {
+                    if (path.node.__do_not_ref) {
+                        return;
+                    }
+
+                    if (matches(path.node.name, prefix)) {
                         path.replaceWith(wrap(path.node));
                         path.skip();
                     }
@@ -144,6 +143,36 @@ module.exports.default = function({ types: t }) {
                     path.remove();
                 }
             },
+            AssignmentPattern(path) {
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
+
+                if (
+                    path.node.left.type === "Identifier" &&
+                    matches(path.node.left.name, prefix)
+                ) {
+                    path.node.left.__do_not_ref = true;
+                    path.node.right = t.callExpression($call`createWatchable`, [
+                        path.node.right
+                    ]);
+                }
+            },
+            ObjectProperty(path) {
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
+
+                if (
+                    path.node.key.type === "Identifier" &&
+                    matches(path.node.key.name, prefix)
+                ) {
+                    path.node.key.__do_not_ref = true;
+                    path.node.value = t.callExpression($call`createWatchable`, [
+                        path.node.value
+                    ]);
+                }
+            },
             VariableDeclarator(path) {
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
@@ -153,6 +182,7 @@ module.exports.default = function({ types: t }) {
                     path.node.id.type === "Identifier" &&
                     matches(path.node.id.name, prefix)
                 ) {
+                    path.node.id.__do_not_ref = true;
                     path.node.init = t.callExpression($call`createWatchable`, [
                         path.node.init
                     ]);
