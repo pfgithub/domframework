@@ -56,11 +56,17 @@ let o=
 <div>{$obj}</div>
 
 
------------ CASES TO HANDLE
 
 ({$a} = {$a: $b}) => $a;
 let fntest = ($a = $b) => $a + 2;
 let o = {$a: "test"} // maybe this should error?
+function c({a: $a}){
+  a; $a;
+}
+
+----------- CASES TO HANDLE
+
+(as discovered)
 
 */
 
@@ -113,7 +119,6 @@ module.exports.default = function({ types: t }) {
                                 "Identifier" &&
                             path.node.object.callee.property.name === "$get")
                     ) {
-                        console.log("got ehre");
                         let property = path.node.property;
                         if (property.type === "Identifier") {
                             //property.name = "test";
@@ -130,7 +135,6 @@ module.exports.default = function({ types: t }) {
                                 )
                             );
                             path.skip();
-                            console.log("did replace");
                         }
                     }
                 }
@@ -163,14 +167,25 @@ module.exports.default = function({ types: t }) {
                     .__dmf_prefix;
                 if (!prefix) return;
 
+                let canCreateWatchable = true;
+                if (
+                    path.parent.type === "ObjectPattern" &&
+                    path.node.value.type === "Identifier" &&
+                    matches(path.node.value.name, prefix)
+                ) {
+                    path.node.value.__do_not_ref = true;
+                    canCreateWatchable = false;
+                }
                 if (
                     path.node.key.type === "Identifier" &&
                     matches(path.node.key.name, prefix)
                 ) {
                     path.node.key.__do_not_ref = true;
-                    path.node.value = t.callExpression($call`createWatchable`, [
-                        path.node.value
-                    ]);
+                    if (canCreateWatchable)
+                        path.node.value = t.callExpression(
+                            $call`createWatchable`,
+                            [path.node.value]
+                        );
                 }
             },
             VariableDeclarator(path) {
