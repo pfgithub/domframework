@@ -203,6 +203,19 @@ module.exports.default = function({ types: t }) {
                     ]);
                 }
             },
+            ArrayPattern(path) {
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
+
+                path.node.elements.forEach(element => {
+                    if (
+                        element.type === "Identifier" &&
+                        matches(element.name, prefix)
+                    )
+                        element.__do_not_ref = true;
+                });
+            },
             JSXExpressionContainer: {
                 exit(path) {
                     /*
