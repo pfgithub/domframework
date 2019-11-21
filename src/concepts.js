@@ -68,6 +68,11 @@ function c({a: $a}){
 
 (as discovered)
 
+$a.b?.c.d
+
+EXPECTED: (__1 = $a.get("b")).ref ? __1.get("c").get("d").ref
+GOT: $a.get("b").ref?.c.d
+
 */
 
 Object.defineProperty(exports, "__esModule", {

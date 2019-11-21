@@ -2,12 +2,6 @@ console.log("It works!");
 
 import "./drawBoxAroundElement";
 
-export const watchable_watchers = Symbol("watchers");
-export const watchable_watch = Symbol("watch");
-export const watchable_value = Symbol("value");
-export const watchable_ref = Symbol("ref");
-export const watchable_cb = Symbol("cb");
-
 declare global {
     interface Window {
         onNodeUpdate: (node: Node) => void;
@@ -163,39 +157,6 @@ export const d = (
 export let React = { createElement: d };
 
 // type RealOrWatchable<T> = T | Watchable<T>;
-
-const watchable_setup = Symbol("setup");
-const watchable_emit = Symbol("emit");
-const watchable_cleanup = Symbol("cleanup");
-const watchable_cleanupfns = Symbol("cleanupfns");
-const watchable_data = Symbol("data");
-
-abstract class WatchableBase<T> implements Watchable<T> {
-    [watchable_watchers]: ((v: T) => void)[] = [];
-    [watchable_watch](watcher: (v: T) => void): () => void {
-        if (this[watchable_watchers].length === 0) {
-            this[watchable_setup]();
-        }
-        this[watchable_watchers].push(watcher);
-        return () => {
-            console.log("removing self", this[watchable_watchers], watcher);
-            this[watchable_watchers] = this[watchable_watchers].filter(
-                e => e !== watcher
-            );
-            if (this[watchable_watchers].length === 0) {
-                this[watchable_cleanup]();
-            }
-            console.log("done", this[watchable_watchers], watcher);
-        };
-    }
-    [watchable_emit](value: T) {
-        // next tick:
-        nextTick(() => this[watchable_watchers].map(w => w(value)));
-    }
-    abstract [watchable_value](): T;
-    abstract [watchable_setup](): void;
-    abstract [watchable_cleanup](): void;
-}
 
 export class WatchableDependencyList<T> extends WatchableBase<T> {
     private [watchable_cb]: () => T;

@@ -1,3 +1,5 @@
+typescript has optional chaining now! (this means nothing but is still useful)
+
 the issue: WatchableRef needs to encompass everything
 
 ```js
