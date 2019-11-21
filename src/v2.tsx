@@ -6,6 +6,29 @@ import {
     WatchableDependencyList
 } from ".";
 
+/*
+
+-=-=-=-=-=-=-=-=-=-=-=- DEMO -=-=-=-=-=-==-=-=-=-=--=
+
+"dmf prefix $";
+
+
+let $o = {a: 5};
+
+
+
+document.body.appendChild(<div>
+{$o.a} ({$o.a.toFixed(2)}) <button onclick={() => $o.a++}>+</button>
+</div>);
+
+
+
+
+
+
+
+*/
+
 type CreatedWatchable<T> = T extends object
     ? { [key in keyof T]: CreatedWatchable<T[key]> }
     : WatchableRef<T>;

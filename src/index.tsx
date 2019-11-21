@@ -17,6 +17,17 @@ declare global {
 
 window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
 
+let doNextTick: (() => void)[] = [];
+function nextTick(cb: () => void) {
+    if (!doNextTick.length) {
+        setTimeout(() => {
+            doNextTick.forEach(dnt => dnt());
+            doNextTick = [];
+        }, 0);
+    }
+    doNextTick.push(cb);
+}
+
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
 export interface Watchable<T> {
@@ -178,7 +189,8 @@ abstract class WatchableBase<T> implements Watchable<T> {
         };
     }
     [watchable_emit](value: T) {
-        this[watchable_watchers].map(w => w(value));
+        // next tick:
+        nextTick(() => this[watchable_watchers].map(w => w(value)));
     }
     abstract [watchable_value](): T;
     abstract [watchable_setup](): void;
@@ -512,39 +524,14 @@ export function ListRender<T extends Watchable<any>>(props: {
 
 export function makeWatchablesFromBuiltins() {}
 
-export class FakeEmitter<
-    T extends Watchable<void> | undefined
-> extends WatchableBase<void> {
-    private __trueValue: T | undefined = undefined;
-    private __removalHandler: () => void = () => undefined;
-    get ref(): T | undefined {
-        return this.__trueValue;
-    }
+export class FakeEmitter<T extends Watchable<void>> {
+    constructor() {}
     get $ref() {
-        return this.ref;
+        // return this.realObject.$ref
     }
-    set ref(value: T | undefined) {
-        this.__removalHandler();
-        this.__trueValue = value;
-        if (value)
-            this.__removalHandler = value[watchable_watch](() => {
-                // emit self
-                this[watchable_emit]();
-            });
-        else this.__removalHandler = () => undefined;
-        this[watchable_emit]();
-    }
-    [watchable_value](): void {}
-    [watchable_setup](): void {}
-    [watchable_cleanup](): void {
-        this.__removalHandler();
-    }
-    toJSON() {
-        return this.__trueValue
-            ? (this.__trueValue as any).toJSON
-                ? (this.__trueValue as any).toJSON()
-                : undefined
-            : undefined;
+    set $ref(v: any) {
+        // this.realObject.$ref = v;
+        // what if realobject is number and v is object
     }
 }
 
@@ -552,91 +539,119 @@ export class WatchableObject<
     T extends { [key: string]: Watchable<void> | undefined }
 > extends WatchableBase<void> {
     [watchable_value](): void {}
-    [watchable_setup](): void {
-        // throw new Error("Method not implemented.");
-    }
-    [watchable_cleanup](): void {
-        // throw new Error("Method not implemented.");
-    }
-    private __object: {
-        [key in keyof T]: {
-            removalHandler: () => void;
-            fakeEmitter: FakeEmitter<T[key]>;
-        };
-    };
-    constructor(object: T) {
+    [watchable_setup](): void {}
+    [watchable_cleanup](): void {}
+
+    private __object: { [key in keyof T]: FakeEmitter<any> };
+
+    constructor(initial: T) {
         super();
-        //@ts-ignore
-        this.__object = {};
-        // !!!!!!!!!!!!! TODO!!!
-        Object.keys(object).forEach(k => {
-            //@ts-ignore
-            this.create(k, object[k]);
-        });
+        this.__object = {} as any;
     }
-    create(key: keyof T, value: T[typeof key] | undefined) {
-        // add a watcher on the fakeemitter to delete(key) when it is cleaned up
-        // :::
-        // someone may get a value that does not exist
-        // in this situation, we need to create a temporary fakeEmitter
-        // if the value gets set, that's fine.
-        // once everyone watching the fakeemitter is done, if there is no value,
-        // it needs to be cleaned up.
-        // Maybe the fakeemitter can have a reference to this that it calls
-        // on cleanup if it === undefined
-        // Keep in mind we need to differentiate between
-        // {a: undefined}
-        // and
-        // {}
-        let fakeEmitter = new FakeEmitter<T[typeof key]>();
-        fakeEmitter.ref = value;
-        let removalHandler = fakeEmitter[watchable_watch](() => {
-            // !!!!!!!! emit create event
-            this[watchable_emit]();
-        });
-        // fakeEmitter.onCleanup() // if(it === undefined) // cleanup
-        let newValue = { removalHandler, fakeEmitter };
-        this.__object[key] = newValue;
-    }
-    get v(): { [key in keyof T]: FakeEmitter<T[key]> } {
-        return new Proxy(
-            {},
-            {
-                get: (q, v) => {
-                    if (typeof v === "string") return this.get(v as keyof T);
-                    return (this as any)[v];
-                }
-            }
-        ) as { [key in keyof T]: FakeEmitter<T[key]> };
-    }
-    get<Q extends keyof T>(key: Q): FakeEmitter<T[Q]> {
-        // return new ObjectValueGetter
-        let value = this.__object[key];
-        if (!value) {
-            this.create(key, undefined);
-            return this.__object[key].fakeEmitter;
+    $get(v: keyof T) {
+        // returns something
+        if (this.__object[v]) {
+            return this.__object[v];
         }
-        return value.fakeEmitter;
-    }
-    set(key: keyof T, value: T[typeof key]) {
-        if (this.__object[key]) {
-            this.__object[key].fakeEmitter.ref = value; // fakeemitter will handle event emitting
-        } else {
-            this.create(key, value);
-        }
-    }
-    delete(key: keyof T) {
-        if (this.__object[key]) {
-            this.__object[key].fakeEmitter; // !!!!!!!!!!!!! tell fakeemitter it should delete once all its watchers are cleared
-        }
-    }
-    toJSON() {
-        let resObject: {
-            [key in keyof T]?: FakeEmitter<T[key]>;
-        } = {};
-        Object.keys(this.__object).forEach(
-            key => (resObject[key as keyof T] = this.__object[key].fakeEmitter)
-        );
-        return resObject;
+        this.__object[v] = new FakeEmitter();
+        // fakeemitter::watchUnused::delete this.__object[v]
     }
 }
+// DEMO::
+// $obj.$get("a").ref = 5;
+// that updates the fakeemitter at "a" to contain a WatchableRef = 5
+// how?
+// ?
+
+// export class WatchableObject<
+//     T extends { [key: string]: Watchable<void> | undefined }
+// > extends WatchableBase<void> {
+//     [watchable_value](): void {}
+//     [watchable_setup](): void {
+//         // throw new Error("Method not implemented.");
+//     }
+//     [watchable_cleanup](): void {
+//         // throw new Error("Method not implemented.");
+//     }
+//     private __object: {
+//         [key in keyof T]: {
+//             removalHandler: () => void;
+//             fakeEmitter: FakeEmitter<T[key]>;
+//         };
+//     };
+//     constructor(object: T) {
+//         super();
+//         //@ts-ignore
+//         this.__object = {};
+//         // !!!!!!!!!!!!! TODO!!!
+//         Object.keys(object).forEach(k => {
+//             //@ts-ignore
+//             this.create(k, object[k]);
+//         });
+//     }
+//     create(key: keyof T, value: T[typeof key] | undefined) {
+//         // add a watcher on the fakeemitter to delete(key) when it is cleaned up
+//         // :::
+//         // someone may get a value that does not exist
+//         // in this situation, we need to create a temporary fakeEmitter
+//         // if the value gets set, that's fine.
+//         // once everyone watching the fakeemitter is done, if there is no value,
+//         // it needs to be cleaned up.
+//         // Maybe the fakeemitter can have a reference to this that it calls
+//         // on cleanup if it === undefined
+//         // Keep in mind we need to differentiate between
+//         // {a: undefined}
+//         // and
+//         // {}
+//         let fakeEmitter = new FakeEmitter<T[typeof key]>();
+//         fakeEmitter.ref = value;
+//         let removalHandler = fakeEmitter[watchable_watch](() => {
+//             // !!!!!!!! emit create event
+//             this[watchable_emit]();
+//         });
+//         // fakeEmitter.onCleanup() // if(it === undefined) // cleanup
+//         let newValue = { removalHandler, fakeEmitter };
+//         this.__object[key] = newValue;
+//     }
+//     get v(): { [key in keyof T]: FakeEmitter<T[key]> } {
+//         return new Proxy(
+//             {},
+//             {
+//                 get: (q, v) => {
+//                     if (typeof v === "string") return this.get(v as keyof T);
+//                     return (this as any)[v];
+//                 }
+//             }
+//         ) as { [key in keyof T]: FakeEmitter<T[key]> };
+//     }
+//     get<Q extends keyof T>(key: Q): FakeEmitter<T[Q]> {
+//         // return new ObjectValueGetter
+//         let value = this.__object[key];
+//         if (!value) {
+//             this.create(key, undefined);
+//             return this.__object[key].fakeEmitter;
+//         }
+//         return value.fakeEmitter;
+//     }
+//     set(key: keyof T, value: T[typeof key]) {
+//         if (this.__object[key]) {
+//             this.__object[key].fakeEmitter.ref = value; // fakeemitter will handle event emitting
+//         } else {
+//             this.create(key, value);
+//         }
+//     }
+//     delete(key: keyof T) {
+//         if (this.__object[key]) {
+//             this.__object[key].fakeEmitter; // !!!!!!!!!!!!! tell fakeemitter it should delete once all its watchers are cleared
+//         }
+//     }
+//     toJSON() {
+//         let resObject: {
+//             [key in keyof T]?: FakeEmitter<T[key]>;
+//         } = {};
+//         Object.keys(this.__object).forEach(
+//             key => (resObject[key as keyof T] = this.__object[key].fakeEmitter)
+//         );
+//         return resObject;
+//     }
+// }
