@@ -73,6 +73,11 @@ $a.b?.c.d
 EXPECTED: (__1 = $a.get("b")).ref ? __1.get("c").get("d").ref
 GOT: $a.get("b").ref?.c.d
 
+delete $a.b.c
+
+EXPECTED: $a.get("b").delete("c")
+GOT: delete $a.get("b").get("c").$ref
+
 */
 
 Object.defineProperty(exports, "__esModule", {
@@ -226,17 +231,6 @@ module.exports.default = function({ types: t }) {
             },
             JSXExpressionContainer: {
                 exit(path) {
-                    /*
-                ---
-                it turns out sometimes we need to do things outside of
-                jsxexpresisoncontainer.
-                consider:
-                let $o = 5;
-                $o++
-                this should be $o.$ref++
-                but because it's not in a jsxexpressioncontainer, that doesn't happen
-                ---
-                */
                     let prefix = path.findParent(path => path.isProgram())
                         .__dmf_prefix;
                     if (!prefix) return;

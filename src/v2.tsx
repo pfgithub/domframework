@@ -1,3 +1,5 @@
+import { watch } from ".";
+
 // diffing tutorial (to prevent the use of keys)
 // : each item (set [Symbol.diffhelper] =Symbol("v"))
 // now they can be added to a list properly
@@ -72,77 +74,104 @@ export abstract class WatchableBase<T> {
     abstract [watchable_cleanup](): void;
 }
 
+// !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
+
 export class WatchableThing<T> extends WatchableBase<void> {
-    private __v!: T;
-    constructor(v: T) {
+    private __v!: any;
+    isUnused: boolean;
+    constructor(v: T, isUnused = false) {
         super();
         this.$ref = v;
+        this.isUnused = isUnused;
     }
     [watchable_value](): void {}
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
-    set $ref(nv: T) {
-        // if(is object, loop over each item, diff or whatever, ...)
+    set $ref(nv: any) {
+        this[watchable_emit](); // emit before anything under us potentially emits
+        this.isUnused = true;
+        if (typeof this.__v === "object" && typeof nv === "object") {
+            // if is array, good luck...
+            let existingKeys: { [key: string]: WatchableThing<any> } = {
+                ...this.__v
+            };
+            Object.keys(nv).forEach(key => {
+                let value = nv[key];
+                this.$get(key).$ref = value;
+                delete existingKeys[key];
+            });
+            Object.keys(existingKeys).forEach(key => {
+                let value = existingKeys[key];
+                value.$ref = undefined;
+                value.isUnused = true;
+            });
+            return;
+        }
+        if (typeof nv === "object") {
+            this.__v = {};
+            Object.keys(nv).forEach(key => {
+                let value = nv[key];
+                this.$get(key).$ref = value;
+            });
+            return;
+        }
         this.__v = nv;
-        this[watchable_emit]();
     }
     get $ref() {
-        // unfortunately, here we need to recursive loop down into
-        // __v and .ref each value
-        // if(is object)
-        // if(is array)
-        // if(is ref)
+        if (typeof this.__v === "object") {
+            let newObject: any = {};
+            Object.keys(this.__v).forEach(key => {
+                let value = this.__v[key].$ref;
+                newObject[key] = value; // !!!!!!! if value is temporary, ignore it
+            });
+            return newObject;
+        }
         return this.__v;
     }
     $get(v: string): WatchableThing<any> {
-        let value = (this.__v as any)[v];
-        if (value ?? false) {
-            // like !value but ??
+        if (!(v in this.__v)) {
+            this.__v[v] = new WatchableThing(undefined, true);
+            return this.__v[v];
         }
-        // if(typeof __v === object) : return __v[v] ? __v[v] : __v[v] = new WatchableThing(undefined, temp);
+        let value = (this.__v as any)[v];
+        return value;
+    }
+    toJSON() {
+        return this.$ref;
     }
 }
 
-let testThing = new WatchableThing({});
-console.log(testThing.$get("a").$ref);
-testThing
-    .$get("propname")
-    [watchable_watch](() =>
-        console.log(
-            "propname was set. testthing is: " + JSON.stringify(testThing)
-        )
-    );
-testThing.$get("propname").$ref = "new value";
-testThing.$get("a").$ref = "also changed";
-testThing.$ref = { "propname is no longer a thing": "rip" };
-testThing.$ref = { propname: "oh it's back" };
-// by the end of this, the cb will be called 4 times because everything updates then cb gets emitted.
-// HOW TO FIX:: do the diffhelper symbol on cb
+export const $ = {
+    createWatchable: (v: any) => new WatchableThing(v),
+    watch
+};
 
-// type CreatedWatchable<T> = T extends object
-//     ? { [key in keyof T]: CreatedWatchable<T[key]> }
-//     : WatchableRef<T>;
-// export let $ = {
-//     // functions here are only to be auto called by the compiler
-//     createWatchable<T>(obj: T): CreatedWatchable<T> {
-//         if (typeof obj === "object") {
-//             if (Array.isArray(obj)) {
-//                 let rv = new WatchableList();
-//                 obj.forEach(q => rv.push($.createWatchable(q) as any));
-//                 return rv as any;
-//             }
-//             let ro = new WatchableObject({});
-//             Object.keys(obj).forEach(k =>
-//                 ro.set(k as never, $.createWatchable((obj as any)[k] as never))
-//             );
-//             return ro as any;
-//         }
-//         return new WatchableRef(obj) as any;
-//     },
-//     watch<T>(
-//         data: Watchable<any>[],
-//         cb: () => T
-//     ): WatchableDependencyList<typeof data> {
-//         return new WatchableDependencyList(data, cb) as any;
-//     }
-// };
+let tick = () =>
+    new Promise(r => setTimeout(() => (console.log("^- tick over"), r()), 0));
+
+(async () => {
+    let testThing = new WatchableThing({});
+    console.log(testThing.$get("a").$ref);
+    testThing
+        .$get("propname")
+        [watchable_watch](() =>
+            console.log(
+                "|- propname was set. testthing is: " +
+                    JSON.stringify(testThing)
+            )
+        );
+    await tick();
+    console.log("setting propname. should emit.");
+    testThing.$get("propname").$ref = "new value";
+    await tick();
+    console.log("setting a. nothing should happen.");
+    testThing.$get("a").$ref = "also changed";
+    await tick();
+    console.log("removing propname. should emit.");
+    testThing.$ref = { "propname is no longer a thing": "rip", a: 23 }; // in this case, propname should still exist as an empty
+    await tick();
+    console.log("adding propname. should emit.");
+    testThing.$ref = { propname: "oh it's back" };
+    await tick();
+    console.log("testthing is: " + JSON.stringify(testThing));
+})();
