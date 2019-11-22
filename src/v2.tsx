@@ -80,6 +80,8 @@ export abstract class WatchableBase<T> {
 
 // !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
 
+export class FakeWatchable<T> extends WatchableBase<void> {}
+
 export class WatchableThing<T> extends WatchableBase<void> {
     private __v!: any;
     isUnused: boolean;
@@ -92,6 +94,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
     set $ref(nv: any) {
+        // emit to any above us (highest first)
         this[watchable_emit](); // emit before anything under us potentially emits
         this.isUnused = true;
         if (typeof this.__v === "object" && typeof nv === "object") {
