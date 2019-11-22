@@ -1,69 +1,4 @@
 /*
-
-code:
-
-<div>value: {"" + $a.value.toString($number)}</div>
-
-output:
-
-<div>value: {watch([$a.$get("value").$get("toString")], () => $a.$get("value").$get("toString").ref($number))}</div>
-
-usage:
-
-$a.get("value") :: WatchableRef(0)
-.get("tostring").ref :: WatchableRef(0).ref.toString
-[watchable_watch] :: WatchableRef(0).watch => ref.toString
-
-
-function Number({$num: $num}){
-
-return <div><button onclick={() => setNum(num + 1)}>+</button> {""+$num}</div>
-
-}
-
-
-function TodoList(){
-
-let $list = []; // -> let $list = create([]);
-
-return <ul>
-<ListRender list={$list}>
-{($item, symbol) => <li>
-<Input type="text" value={$item} /> // -> value={$item.ref} // but in this situation we want to bind. $value={$item} for two way binding maybe. that loses ts support.
-</li>} // no action
-</ListRender>
-<li><button onclick={() => $list.push("v")}>+Add Item</button></li> // no action necessary, things inside functions are ignored
-</ul>
-
-}
-
------
-
-
-"dmf prefix $";
-
-let $obj = {
-    mode: "a",
-    a: 3
-};
-
-$obj.c = "test";
-
-<div>{$obj.c = "test"}</div>
-// <- should be $obj.$get("c").$ref but babel errors while setting it to $obj.$get before it has gotten to .ref
-
-let o=
-<div>{$obj}</div>
-
-
-
-({$a} = {$a: $b}) => $a;
-let fntest = ($a = $b) => $a + 2;
-let o = {$a: "test"} // maybe this should error?
-function c({a: $a}){
-  a; $a;
-}
-
 ----------- CASES TO HANDLE
 
 (as discovered)
@@ -117,6 +52,26 @@ module.exports.default = function({ types: t }) {
                 }
             },
             MemberExpression: {
+                enter(path) {
+                    if (
+                        path.findParent(
+                            path => path.node.__is_supposed_to_skip
+                        ) ||
+                        path.node.__is_supposed_to_skip
+                    ) {
+                        return;
+                    }
+                    let prefix = path.findParent(path => path.isProgram())
+                        .__dmf_prefix;
+                    if (!prefix) return;
+
+                    if (
+                        path.node.property.type === "Identifier" &&
+                        matches(path.node.property.name, prefix)
+                    ) {
+                        path.node.property.__do_not_ref = true;
+                    }
+                },
                 exit(path) {
                     if (
                         path.findParent(
@@ -146,8 +101,18 @@ module.exports.default = function({ types: t }) {
                                 "Identifier" &&
                             path.node.object.callee.property.name === "$get")
                     ) {
+                        if (path.node.object.__ignore) {
+                            return;
+                        }
                         let property = path.node.property;
                         if (property.type === "Identifier") {
+                            if (property.name === "$bind") {
+                                path.node.object.__ignore = true;
+                                path.replaceWith(path.node.object);
+                                path.skip();
+                                path.node.__is_supposed_to_skip = true;
+                                return;
+                            }
                             //property.name = "test";
                             path.replaceWith(
                                 wrap(
@@ -167,7 +132,23 @@ module.exports.default = function({ types: t }) {
                     }
                 }
             },
-
+            ImportSpecifier(path) {
+                path.skip();
+                path.node.__is_supposed_to_skip = true;
+            },
+            LogicalExpression(path) {
+                // if (path.node.operator === "||") {
+                if (
+                    path.node.right.type === "Identifier" &&
+                    path.node.right.name === "$bind"
+                ) {
+                    path.replaceWith(
+                        t.memberExpression(path.node.left, path.node.right)
+                    );
+                    return;
+                }
+                // }
+            },
             Directive(path) {
                 if (
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
@@ -180,6 +161,26 @@ module.exports.default = function({ types: t }) {
                     file.__dmf_prefix = path.node.value.value.substr(11);
                     path.remove();
                 }
+            },
+            FunctionDeclaration(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    return;
+                }
+                let prefix = path.findParent(path => path.isProgram())
+                    .__dmf_prefix;
+                if (!prefix) return;
+
+                path.node.params.forEach(param => {
+                    if (
+                        param.type === "Identifier" &&
+                        matches(param.name, prefix)
+                    ) {
+                        param.__do_not_ref = true;
+                    }
+                });
             },
             AssignmentPattern(path) {
                 if (

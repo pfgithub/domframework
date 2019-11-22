@@ -2,6 +2,8 @@
 // : each item (set [Symbol.diffhelper] =Symbol("v"))
 // now they can be added to a list properly
 
+export declare let $bind: never;
+
 let nextTickInfo:
     | {
           symbol: symbol;

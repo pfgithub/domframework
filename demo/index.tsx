@@ -1,7 +1,7 @@
 "dmf prefix $";
 
 import { React } from "../src";
-import { $ } from "../src/v2";
+import { $, $bind } from "../src/v2";
 
 $;
 React;
@@ -29,7 +29,17 @@ document.body.appendChild(
     ).node
 );
 
-let $obj: { a: 6; b: 5 } | undefined = undefined;
+function NumberThing($q: number) {
+    return (
+        <span>
+            <button onclick={() => $q--}>--</button>
+            {$q}
+            <button onclick={() => $q++}>++</button>
+        </span>
+    );
+}
+
+let $obj: { a: 5; b: 6 } | undefined = undefined;
 document.body.appendChild(
     (
         <div>
@@ -37,11 +47,12 @@ document.body.appendChild(
                 <span>not defined</span>
             ) : (
                 <span>
-                    {$obj.a} {$obj.b}
+                    {NumberThing($obj.a || $bind)}{" "}
+                    {NumberThing($obj.b || $bind)}
                 </span>
             )}
             <button onclick={() => ($obj = undefined)}>set undefined</button>
-            <button onclick={() => ($obj = { a: 6, b: 5 })}>set 5, 6</button>
+            <button onclick={() => ($obj = { a: 5, b: 6 })}>set 5, 6</button>
         </div>
     ).node
 );
