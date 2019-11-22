@@ -93,6 +93,14 @@ module.exports.default = function({ types: t }) {
         visitor: {
             Identifier: {
                 exit(path) {
+                    if (
+                        path.findParent(
+                            path => path.node.__is_supposed_to_skip
+                        ) ||
+                        path.node.__is_supposed_to_skip
+                    ) {
+                        return;
+                    }
                     let prefix = path.findParent(path => path.isProgram())
                         .__dmf_prefix;
                     if (!prefix) return;
@@ -104,11 +112,21 @@ module.exports.default = function({ types: t }) {
                     if (matches(path.node.name, prefix)) {
                         path.replaceWith(wrap(path.node));
                         path.skip();
+                        path.node.__is_supposed_to_skip = true;
                     }
                 }
             },
             MemberExpression: {
                 exit(path) {
+                    if (
+                        path.findParent(
+                            path => path.node.__is_supposed_to_skip
+                        ) ||
+                        path.node.__is_supposed_to_skip
+                    ) {
+                        console.log("PATH FAILED TO SKIP :))");
+                        return;
+                    }
                     let prefix = path.findParent(path => path.isProgram())
                         .__dmf_prefix;
                     if (!prefix) return;
@@ -145,12 +163,20 @@ module.exports.default = function({ types: t }) {
                                 )
                             );
                             path.skip();
+                            path.node.__is_supposed_to_skip = true;
                         }
                     }
                 }
             },
 
             Directive(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    console.log("PATH FAILED TO SKIP :))");
+                    return;
+                }
                 if (path.node.value.value.startsWith("dmf prefix ")) {
                     let file = path.findParent(path => path.isProgram());
                     file.__dmf_prefix = path.node.value.value.substr(11);
@@ -158,6 +184,13 @@ module.exports.default = function({ types: t }) {
                 }
             },
             AssignmentPattern(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    console.log("PATH FAILED TO SKIP :))");
+                    return;
+                }
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
                 if (!prefix) return;
@@ -173,6 +206,13 @@ module.exports.default = function({ types: t }) {
                 }
             },
             ObjectProperty(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    console.log("PATH FAILED TO SKIP :))");
+                    return;
+                }
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
                 if (!prefix) return;
@@ -199,6 +239,13 @@ module.exports.default = function({ types: t }) {
                 }
             },
             VariableDeclarator(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    console.log("PATH FAILED TO SKIP :))");
+                    return;
+                }
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
                 if (!prefix) return;
@@ -217,6 +264,13 @@ module.exports.default = function({ types: t }) {
                 }
             },
             ArrayPattern(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    console.log("PATH FAILED TO SKIP :))");
+                    return;
+                }
                 let prefix = path.findParent(path => path.isProgram())
                     .__dmf_prefix;
                 if (!prefix) return;
@@ -231,6 +285,15 @@ module.exports.default = function({ types: t }) {
             },
             JSXExpressionContainer: {
                 exit(path) {
+                    if (
+                        path.findParent(
+                            path => path.node.__is_supposed_to_skip
+                        ) ||
+                        path.node.__is_supposed_to_skip
+                    ) {
+                        console.log("PATH FAILED TO SKIP :))");
+                        return;
+                    }
                     let prefix = path.findParent(path => path.isProgram())
                         .__dmf_prefix;
                     if (!prefix) return;
@@ -253,6 +316,8 @@ module.exports.default = function({ types: t }) {
                         }
                     });
 
+                    console.log("WATCHABLES TO ADD: ", watchables);
+
                     if (watchables.length <= 0) {
                         // nothing to do. don't skip.
                         return;
@@ -261,6 +326,8 @@ module.exports.default = function({ types: t }) {
                         t.arrayExpression(watchables),
                         t.arrowFunctionExpression([], path.node.expression)
                     ]);
+                    path.skip();
+                    path.node.expression.__is_supposed_to_skip = true;
                 }
             }
         }

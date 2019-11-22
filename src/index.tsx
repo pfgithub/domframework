@@ -11,7 +11,8 @@ import {
     watchable_cleanupfns,
     watchable_setup,
     watchable_emit,
-    watchable_cleanup
+    watchable_cleanup,
+    Watchable
 } from "./v2";
 
 declare global {
@@ -23,23 +24,7 @@ declare global {
 
 window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
 
-let doNextTick: (() => void)[] = [];
-function nextTick(cb: () => void) {
-    if (!doNextTick.length) {
-        setTimeout(() => {
-            doNextTick.forEach(dnt => dnt());
-            doNextTick = [];
-        }, 0);
-    }
-    doNextTick.push(cb);
-}
-
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
-
-export interface Watchable<T> {
-    [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
-    [watchable_value](): T;
-}
 
 export interface WatchableComponent extends Watchable<ComponentModel> {}
 
@@ -163,38 +148,6 @@ export const d = (
 export let React = { createElement: d };
 
 // type RealOrWatchable<T> = T | Watchable<T>;
-
-export class WatchableDependencyList<T> extends WatchableBase<T> {
-    private [watchable_cb]: () => T;
-    private [watchable_data]: Watchable<any>[];
-    private [watchable_cleanupfns]: (() => void)[] = [];
-    constructor(data: Watchable<any>[], cb: () => T) {
-        super();
-        this[watchable_cb] = cb;
-        this[watchable_data] = data;
-    }
-    [watchable_value]() {
-        return this[watchable_cb]();
-    }
-    [watchable_setup]() {
-        this[watchable_data].forEach(dataToWatch => {
-            this[watchable_cleanupfns].push(
-                dataToWatch[watchable_watch](() => {
-                    // when any data changes
-                    let valueToReturn = this[watchable_value](); // get our own value
-                    this[watchable_emit](valueToReturn);
-                })
-            );
-        });
-    }
-    [watchable_cleanup]() {
-        this[watchable_cleanupfns].map(cfn => cfn());
-    }
-}
-
-export function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
-    return new WatchableDependencyList(data, cb);
-}
 
 export function textNode(
     v: string | Watchable<string>

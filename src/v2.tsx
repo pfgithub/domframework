@@ -1,5 +1,3 @@
-import { watch } from ".";
-
 // diffing tutorial (to prevent the use of keys)
 // : each item (set [Symbol.diffhelper] =Symbol("v"))
 // now they can be added to a list properly
@@ -175,3 +173,40 @@ let tick = () =>
     await tick();
     console.log("testthing is: " + JSON.stringify(testThing));
 })();
+
+export interface Watchable<T> {
+    [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
+    [watchable_value](): T;
+}
+
+export class WatchableDependencyList<T> extends WatchableBase<T> {
+    private [watchable_cb]: () => T;
+    private [watchable_data]: Watchable<any>[];
+    private [watchable_cleanupfns]: (() => void)[] = [];
+    constructor(data: Watchable<any>[], cb: () => T) {
+        super();
+        this[watchable_cb] = cb;
+        this[watchable_data] = data;
+    }
+    [watchable_value]() {
+        return this[watchable_cb]();
+    }
+    [watchable_setup]() {
+        this[watchable_data].forEach(dataToWatch => {
+            this[watchable_cleanupfns].push(
+                dataToWatch[watchable_watch](() => {
+                    // when any data changes
+                    let valueToReturn = this[watchable_value](); // get our own value
+                    this[watchable_emit](valueToReturn);
+                })
+            );
+        });
+    }
+    [watchable_cleanup]() {
+        this[watchable_cleanupfns].map(cfn => cfn());
+    }
+}
+
+export function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
+    return new WatchableDependencyList(data, cb);
+}

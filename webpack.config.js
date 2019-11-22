@@ -6,6 +6,7 @@ const ProgressBarPlugin = require("progress-bar-webpack-plugin");
 module.exports = {
     entry: "./demo/index.tsx",
     devtool: "inline-source-map",
+    mode: "development",
     module: {
         rules: [
             {

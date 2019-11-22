@@ -6,12 +6,12 @@ import { $ } from "../src/v2";
 $;
 React;
 
-let $num = 5;
-let $x = 0;
-let $y = 0;
+let $_num = 5;
+let $_x = 0;
+let $_y = 0;
 
 <div>
-    x: {$x}, y: {$y}
+    x: {$_x}, y: {$_y}
 </div>;
 
 // document.body.appendChild(
