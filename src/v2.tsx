@@ -133,12 +133,17 @@ export class WatchableThing<T> extends WatchableBase<void> {
         return this.__v;
     }
     $get(v: string): WatchableThing<any> {
-        if (!(v in this.__v)) {
-            this.__v[v] = new WatchableThing(undefined, true);
-            return this.__v[v];
+        if (typeof v === "object") {
+            if (!(v in this.__v)) {
+                this.__v[v] = new WatchableThing(undefined, true);
+                return this.__v[v];
+            }
+            let value = (this.__v as any)[v];
+            return value;
+        } else {
+            let value = new FakeWatchable((this.__v as any)[v]);
+            return value;
         }
-        let value = (this.__v as any)[v];
-        return value;
     }
     toJSON() {
         return this.$ref;

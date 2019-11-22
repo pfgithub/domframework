@@ -30,10 +30,11 @@ document.body.appendChild(
 );
 
 function NumberThing($q: number) {
+    // for functionalcomponents, every argument should get auto converted to a watchable whether it is or not
     return (
         <span>
             <button onclick={() => $q--}>--</button>
-            {$q}
+            {$q.toFixed(2)}
             <button onclick={() => $q++}>++</button>
         </span>
     );
