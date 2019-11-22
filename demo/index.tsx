@@ -29,43 +29,19 @@ document.body.appendChild(
     ).node
 );
 
-let $obj = {
-    mode: "a",
-    a: 3
-} as { mode: "a"; a: number } | { mode: "b"; b: number };
-
+let $obj: { a: 6; b: 5 } | undefined = undefined;
 document.body.appendChild(
     (
         <div>
-            {$obj.mode === "a" ? (
-                <div>
-                    <button
-                        onclick={
-                            () =>
-                                ($obj = {
-                                    mode: "b",
-                                    b: 12
-                                }) // this diffs ::
-                            // obj.mode = new WatchableRef(b)
-                            // obj.b = new WatchableRef(12)
-                            // how does that work?
-                            // the fakeemitter emits events still when it changes
-                        }
-                    >
-                        b mode
-                    </button>
-                    a: {$obj.a}{" "}
-                    <button onclick={() => ++($obj as any).a}>++</button>
-                </div>
+            {$obj === undefined ? (
+                <span>undefined</span>
             ) : (
-                <div>
-                    <button onclick={() => ($obj = { mode: "a", a: 3 })}>
-                        a mode
-                    </button>
-                    b: {$obj.b}{" "}
-                    <button onclick={() => --($obj as any).b}>--</button>
-                </div>
+                <span>
+                    {$obj.a} {$obj.b}
+                </span>
             )}
+            <button onclick={() => ($obj = undefined)}>set undefined</button>
+            <button onclick={() => ($obj = { a: 6, b: 5 })}>set 5, 6</button>
         </div>
     ).node
 );

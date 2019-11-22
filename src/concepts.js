@@ -68,6 +68,11 @@ function c({a: $a}){
 
 (as discovered)
 
+$a.b?.c.d
+
+EXPECTED: (__1 = $a.get("b")).ref ? __1.get("c").get("d").ref
+GOT: $a.get("b").ref?.c.d
+
 */
 
 Object.defineProperty(exports, "__esModule", {
@@ -198,6 +203,9 @@ module.exports.default = function({ types: t }) {
                     matches(path.node.id.name, prefix)
                 ) {
                     path.node.id.__do_not_ref = true;
+                    if (!path.node.init) {
+                        path.node.init = t.identifier("undefined");
+                    }
                     path.node.init = t.callExpression($call`createWatchable`, [
                         path.node.init
                     ]);
