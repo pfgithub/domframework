@@ -124,7 +124,6 @@ module.exports.default = function({ types: t }) {
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
-                        console.log("PATH FAILED TO SKIP :))");
                         return;
                     }
                     let prefix = path.findParent(path => path.isProgram())
@@ -174,7 +173,6 @@ module.exports.default = function({ types: t }) {
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
                     path.node.__is_supposed_to_skip
                 ) {
-                    console.log("PATH FAILED TO SKIP :))");
                     return;
                 }
                 if (path.node.value.value.startsWith("dmf prefix ")) {
@@ -188,7 +186,6 @@ module.exports.default = function({ types: t }) {
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
                     path.node.__is_supposed_to_skip
                 ) {
-                    console.log("PATH FAILED TO SKIP :))");
                     return;
                 }
                 let prefix = path.findParent(path => path.isProgram())
@@ -210,7 +207,6 @@ module.exports.default = function({ types: t }) {
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
                     path.node.__is_supposed_to_skip
                 ) {
-                    console.log("PATH FAILED TO SKIP :))");
                     return;
                 }
                 let prefix = path.findParent(path => path.isProgram())
@@ -243,7 +239,6 @@ module.exports.default = function({ types: t }) {
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
                     path.node.__is_supposed_to_skip
                 ) {
-                    console.log("PATH FAILED TO SKIP :))");
                     return;
                 }
                 let prefix = path.findParent(path => path.isProgram())
@@ -268,7 +263,6 @@ module.exports.default = function({ types: t }) {
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
                     path.node.__is_supposed_to_skip
                 ) {
-                    console.log("PATH FAILED TO SKIP :))");
                     return;
                 }
                 let prefix = path.findParent(path => path.isProgram())
@@ -291,7 +285,6 @@ module.exports.default = function({ types: t }) {
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
-                        console.log("PATH FAILED TO SKIP :))");
                         return;
                     }
                     let prefix = path.findParent(path => path.isProgram())
@@ -315,8 +308,6 @@ module.exports.default = function({ types: t }) {
                             }
                         }
                     });
-
-                    console.log("WATCHABLES TO ADD: ", watchables);
 
                     if (watchables.length <= 0) {
                         // nothing to do. don't skip.
