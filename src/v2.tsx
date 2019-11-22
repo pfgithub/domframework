@@ -89,6 +89,9 @@ export class FakeWatchable extends WatchableBase<void> {
     parent: WatchableBase<any>;
     constructor(thing: any, parent: WatchableBase<void>) {
         super();
+        if(typeof thing === "function"){
+            thing = thing.bind(parent.$ref);
+        }
         this.thing = thing;
         this.parent = parent;
     }
