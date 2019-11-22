@@ -49,6 +49,7 @@ export const watchable_cleanupfns = Symbol("cleanupfns");
 
 export abstract class WatchableBase<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
+    $ref: any;
     [watchable_watch](watcher: (v: T) => void): () => void {
         if (this[watchable_watchers].length === 0) {
             this[watchable_setup]();
@@ -80,7 +81,30 @@ export abstract class WatchableBase<T> {
 
 // !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
 
-export class FakeWatchable<T> extends WatchableBase<void> {}
+export class FakeWatchable extends WatchableBase<void> {
+    [watchable_value](): void {}
+    [watchable_setup](): void {}
+    [watchable_cleanup](): void {}
+    thing: any;
+    parent: WatchableBase<any>;
+    constructor(thing: any, parent: WatchableBase<void>) {
+        super();
+        this.thing = thing;
+        this.parent = parent;
+    }
+    get $ref() {
+        return this.thing;
+    }
+    set $ref(nv: any) {
+        throw new Error("Cannot set ref value of fakewatchable");
+    }
+    $get(v: string) {
+        return new FakeWatchable(this.thing[v], this);
+    }
+    [watchable_watch](watcher: (v: any) => void) {
+        return this.parent[watchable_watch](watcher);
+    }
+}
 
 export class WatchableThing<T> extends WatchableBase<void> {
     private __v!: any;
@@ -135,8 +159,8 @@ export class WatchableThing<T> extends WatchableBase<void> {
         }
         return this.__v;
     }
-    $get(v: string): WatchableThing<any> {
-        if (typeof v === "object") {
+    $get(v: string): WatchableBase<any> {
+        if (typeof this.__v === "object") {
             if (!(v in this.__v)) {
                 this.__v[v] = new WatchableThing(undefined, true);
                 return this.__v[v];
@@ -144,7 +168,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
             let value = (this.__v as any)[v];
             return value;
         } else {
-            let value = new FakeWatchable((this.__v as any)[v]);
+            let value = new FakeWatchable((this.__v as any)[v], this);
             return value;
         }
     }
@@ -157,38 +181,6 @@ export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
     watch
 };
-
-// this should be a test
-//
-// let tick = () =>
-//     new Promise(r => setTimeout(() => (console.log("^- tick over"), r()), 0));
-//
-// (async () => {
-//     let testThing = new WatchableThing({});
-//     console.log(testThing.$get("a").$ref);
-//     testThing
-//         .$get("propname")
-//         [watchable_watch](() =>
-//             console.log(
-//                 "|- propname was set. testthing is: " +
-//                     JSON.stringify(testThing)
-//             )
-//         );
-//     await tick();
-//     console.log("setting propname. should emit.");
-//     testThing.$get("propname").$ref = "new value";
-//     await tick();
-//     console.log("setting a. nothing should happen.");
-//     testThing.$get("a").$ref = "also changed";
-//     await tick();
-//     console.log("removing propname. should emit.");
-//     testThing.$ref = { "propname is no longer a thing": "rip", a: 23 }; // in this case, propname should still exist as an empty
-//     await tick();
-//     console.log("adding propname. should emit.");
-//     testThing.$ref = { propname: "oh it's back" };
-//     await tick();
-//     console.log("testthing is: " + JSON.stringify(testThing));
-// })();
 
 export interface Watchable<T> {
     [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
