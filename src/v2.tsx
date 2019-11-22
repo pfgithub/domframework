@@ -51,6 +51,7 @@ export abstract class WatchableBase<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
     $ref: any;
     [watchable_watch](watcher: (v: T) => void): () => void {
+        console.log("base watch was called on",this)
         if (this[watchable_watchers].length === 0) {
             this[watchable_setup]();
         }
@@ -105,6 +106,7 @@ export class FakeWatchable extends WatchableBase<void> {
         return new FakeWatchable(this.thing[v], this);
     }
     [watchable_watch](watcher: (v: any) => void) {
+        console.log("fw watch was called on",this)
         return this.parent[watchable_watch](watcher);
     }
 }
@@ -121,7 +123,8 @@ export class WatchableThing<T> extends WatchableBase<void> {
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
     set $ref(nv: any) {
-        // emit to any above us (highest first)
+        console.log("$ref was used to set to ",nv);
+        // !!!!!!!!!!!!!!!!!!!!!!!! emit to any above us (highest first)
         this[watchable_emit](); // emit before anything under us potentially emits
         this.isUnused = true;
         if (typeof this.__v === "object" && typeof nv === "object") {
@@ -163,6 +166,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         return this.__v;
     }
     $get(v: string): WatchableBase<any> {
+        console.log("$get was used with ",v);
         if (typeof this.__v === "object") {
             if (!(v in this.__v)) {
                 this.__v[v] = new WatchableThing(undefined, true);
@@ -224,6 +228,7 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
                 })
             );
         });
+        console.log("Watchabledependencylist setup was called", this);
     }
     [watchable_cleanup]() {
         this[watchable_cleanupfns].map(cfn => cfn());

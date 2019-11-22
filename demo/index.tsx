@@ -13,7 +13,7 @@ let $y = 0;
 document.body.appendChild(
     (
         <div>
-            <button onclick={() => --$num}>--</button>
+            <button onclick={() => {console.log($num||$bind); --$num}}>--</button>
             {$num}
             <button onclick={() => ++$num}>++</button>
             <div
@@ -34,7 +34,7 @@ function NumberThing($q: number) {
     return (
         <span>
             <button onclick={() => $q--}>--</button>
-            {$q.toFixed(2)}
+            {$q.toFixed()}
             <button onclick={() => $q++}>++</button>
         </span>
     );
