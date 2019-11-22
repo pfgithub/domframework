@@ -34,7 +34,7 @@ document.body.appendChild(
     (
         <div>
             {$obj === undefined ? (
-                <span>undefined</span>
+                <span>not defined</span>
             ) : (
                 <span>
                     {$obj.a} {$obj.b}

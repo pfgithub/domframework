@@ -22,7 +22,8 @@ declare global {
     }
 }
 
-window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
+window.onNodeUpdate = () => {};
+// window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
 
 // note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
 
@@ -55,7 +56,9 @@ export function createComponent(
         let finalNode = document.createTextNode(""); // nodes are inserted before this node
         insert(finalNode);
         let removalFunctions: (() => void)[] = [];
+        let o = 0;
         let updateValue = (model: ComponentModel) => {
+            if (o++) console.log("UPDATE VALUE WAS CALLED BY WATCHABLE");
             // clear outdated nodes
             removalFunctions.map(rf => rf());
             removalFunctions = [];

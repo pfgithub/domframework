@@ -65,7 +65,11 @@ export abstract class WatchableBase<T> {
     }
     [watchable_emit](value: T) {
         // next tick:
-        nextTick(() => this[watchable_watchers].map(w => w(value)));
+        nextTick(() =>
+            this[watchable_watchers].map(w => {
+                w(value);
+            })
+        );
     }
     abstract [watchable_value](): T;
     abstract [watchable_setup](): void;
@@ -144,35 +148,37 @@ export const $ = {
     watch
 };
 
-let tick = () =>
-    new Promise(r => setTimeout(() => (console.log("^- tick over"), r()), 0));
-
-(async () => {
-    let testThing = new WatchableThing({});
-    console.log(testThing.$get("a").$ref);
-    testThing
-        .$get("propname")
-        [watchable_watch](() =>
-            console.log(
-                "|- propname was set. testthing is: " +
-                    JSON.stringify(testThing)
-            )
-        );
-    await tick();
-    console.log("setting propname. should emit.");
-    testThing.$get("propname").$ref = "new value";
-    await tick();
-    console.log("setting a. nothing should happen.");
-    testThing.$get("a").$ref = "also changed";
-    await tick();
-    console.log("removing propname. should emit.");
-    testThing.$ref = { "propname is no longer a thing": "rip", a: 23 }; // in this case, propname should still exist as an empty
-    await tick();
-    console.log("adding propname. should emit.");
-    testThing.$ref = { propname: "oh it's back" };
-    await tick();
-    console.log("testthing is: " + JSON.stringify(testThing));
-})();
+// this should be a test
+//
+// let tick = () =>
+//     new Promise(r => setTimeout(() => (console.log("^- tick over"), r()), 0));
+//
+// (async () => {
+//     let testThing = new WatchableThing({});
+//     console.log(testThing.$get("a").$ref);
+//     testThing
+//         .$get("propname")
+//         [watchable_watch](() =>
+//             console.log(
+//                 "|- propname was set. testthing is: " +
+//                     JSON.stringify(testThing)
+//             )
+//         );
+//     await tick();
+//     console.log("setting propname. should emit.");
+//     testThing.$get("propname").$ref = "new value";
+//     await tick();
+//     console.log("setting a. nothing should happen.");
+//     testThing.$get("a").$ref = "also changed";
+//     await tick();
+//     console.log("removing propname. should emit.");
+//     testThing.$ref = { "propname is no longer a thing": "rip", a: 23 }; // in this case, propname should still exist as an empty
+//     await tick();
+//     console.log("adding propname. should emit.");
+//     testThing.$ref = { propname: "oh it's back" };
+//     await tick();
+//     console.log("testthing is: " + JSON.stringify(testThing));
+// })();
 
 export interface Watchable<T> {
     [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
@@ -185,11 +191,17 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
     private [watchable_cleanupfns]: (() => void)[] = [];
     constructor(data: Watchable<any>[], cb: () => T) {
         super();
+        console.log("Created watchabledependency list with", data, cb);
         this[watchable_cb] = cb;
         this[watchable_data] = data;
     }
     [watchable_value]() {
         return this[watchable_cb]();
+    }
+    [watchable_emit](value: T) {
+        this[watchable_watchers].map(w => {
+            w(value);
+        });
     }
     [watchable_setup]() {
         this[watchable_data].forEach(dataToWatch => {
@@ -197,6 +209,12 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
                 dataToWatch[watchable_watch](() => {
                     // when any data changes
                     let valueToReturn = this[watchable_value](); // get our own value
+                    console.log(
+                        "SOME DATA CHANGED. WE RETURNED",
+                        valueToReturn,
+                        "TO OUR WATCHERS",
+                        this[watchable_watchers]
+                    );
                     this[watchable_emit](valueToReturn);
                 })
             );
