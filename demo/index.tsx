@@ -77,3 +77,65 @@ document.body.appendChild(
         </div>
     ).node
 );
+
+type NestedT = { a: NestedT; b: NestedT } | undefined;
+
+function NestedTest($o: NestedT) {
+    return (
+        <div>
+            {$o ? (
+                <div>
+                    <button onclick={() => ($o = undefined)}>Remove</button>
+                    <ul>
+                        <li>a: {NestedTest($o.a || $bind)}</li>
+                        <li>b: {NestedTest($o.b || $bind)}</li>
+                    </ul>
+                </div>
+            ) : (
+                <div>
+                    <button
+                        onclick={() => ($o = { a: undefined, b: undefined })}
+                    >
+                        Create
+                    </button>
+                </div>
+            )}
+        </div>
+    ); // $o ? isn't great because it updates every time $o or anything under it changes... not sure how to fix.
+    // maybe there should be some way of specifying that we don't need deep values on this one because we're just comparing it against true or false
+}
+
+let $nestedO: NestedT;
+document.body.appendChild(NestedTest($nestedO || $bind).node);
+
+let $showSection = true;
+document.body.appendChild(
+    (
+        <div>
+            {$showSection ? (
+                <div>
+                    <button
+                        onclick={() => {
+                            window.startHighlightUpdates();
+                            $showSection = false;
+                        }}
+                    >
+                        highlight updates
+                    </button>
+                    <button
+                        onclick={() =>
+                            (window.onNodeUpdate = n => console.log(n))
+                        }
+                    >
+                        log updates
+                    </button>
+                    <button onclick={() => (window.onNodeUpdate = () => {})}>
+                        ignore updates
+                    </button>
+                </div>
+            ) : (
+                <div></div>
+            )}
+        </div>
+    ).node
+);
