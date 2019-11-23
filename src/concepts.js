@@ -36,9 +36,11 @@ module.exports.default = function({ types: t }) {
                     ) {
                         return;
                     }
-                    let prefix = path.findParent(path => path.isProgram())
-                        .__dmf_prefix;
-                    if (!prefix) return;
+                    let prefixNode = path.findParent(
+                        path => path.node.__dmf_prefix
+                    );
+                    if (!prefixNode) return;
+                    let prefix = prefixNode.node.__dmf_prefix;
 
                     if (path.node.__do_not_ref) {
                         return;
@@ -61,9 +63,11 @@ module.exports.default = function({ types: t }) {
                     ) {
                         return;
                     }
-                    let prefix = path.findParent(path => path.isProgram())
-                        .__dmf_prefix;
-                    if (!prefix) return;
+                    let prefixNode = path.findParent(
+                        path => path.node.__dmf_prefix
+                    );
+                    if (!prefixNode) return;
+                    let prefix = prefixNode.node.__dmf_prefix;
 
                     if (
                         path.node.property.type === "Identifier" &&
@@ -81,9 +85,11 @@ module.exports.default = function({ types: t }) {
                     ) {
                         return;
                     }
-                    let prefix = path.findParent(path => path.isProgram())
-                        .__dmf_prefix;
-                    if (!prefix) return;
+                    let prefixNode = path.findParent(
+                        path => path.node.__dmf_prefix
+                    );
+                    if (!prefixNode) return;
+                    let prefix = prefixNode.node.__dmf_prefix;
 
                     if (
                         path.node.object.type === "MemberExpression" &&
@@ -157,8 +163,10 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 if (path.node.value.value.startsWith("dmf prefix ")) {
-                    let file = path.findParent(path => path.isProgram());
+                    let file = path.findParent(path => !!path.node.directives)
+                        .node;
                     file.__dmf_prefix = path.node.value.value.substr(11);
+                    console.log("set dmf prefix of", file);
                     path.remove();
                 }
             },
@@ -169,9 +177,12 @@ module.exports.default = function({ types: t }) {
                 ) {
                     return;
                 }
-                let prefix = path.findParent(path => path.isProgram())
-                    .__dmf_prefix;
-                if (!prefix) return;
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                console.log("prefix node is", prefixNode);
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
 
                 path.node.params.forEach(param => {
                     if (
@@ -189,9 +200,11 @@ module.exports.default = function({ types: t }) {
                 ) {
                     return;
                 }
-                let prefix = path.findParent(path => path.isProgram())
-                    .__dmf_prefix;
-                if (!prefix) return;
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
 
                 if (
                     path.node.left.type === "Identifier" &&
@@ -210,9 +223,11 @@ module.exports.default = function({ types: t }) {
                 ) {
                     return;
                 }
-                let prefix = path.findParent(path => path.isProgram())
-                    .__dmf_prefix;
-                if (!prefix) return;
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
 
                 let canCreateWatchable = true;
                 if (
@@ -242,9 +257,11 @@ module.exports.default = function({ types: t }) {
                 ) {
                     return;
                 }
-                let prefix = path.findParent(path => path.isProgram())
-                    .__dmf_prefix;
-                if (!prefix) return;
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
 
                 if (
                     path.node.id.type === "Identifier" &&
@@ -266,9 +283,11 @@ module.exports.default = function({ types: t }) {
                 ) {
                     return;
                 }
-                let prefix = path.findParent(path => path.isProgram())
-                    .__dmf_prefix;
-                if (!prefix) return;
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
 
                 path.node.elements.forEach(element => {
                     if (
@@ -288,9 +307,12 @@ module.exports.default = function({ types: t }) {
                     ) {
                         return;
                     }
-                    let prefix = path.findParent(path => path.isProgram())
-                        .__dmf_prefix;
-                    if (!prefix) return;
+                    let prefixNode = path.findParent(
+                        path => path.node.__dmf_prefix
+                    );
+                    if (!prefixNode) return;
+                    let prefix = prefixNode.node.__dmf_prefix;
+
                     let watchables = [];
                     path.traverse({
                         // traverse once again and add .ref to watchables
