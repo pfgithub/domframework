@@ -10,30 +10,41 @@ let $num = 5;
 let $x = 0;
 let $y = 0;
 
+function ToggleView(children: () => JSX.Element) {
+    let $isVisible = true;
+    return (
+        <div>
+            <button onclick={() => ($isVisible = !$isVisible)}>
+                {$isVisible ? "Hide" : "Show"}
+            </button>{" "}
+            {$isVisible ? (
+                <div>{children()}</div>
+            ) : (
+                <div>Nothing to see here.</div>
+            )}
+        </div>
+    );
+}
+
 document.body.appendChild(
     (
         <div>
-            <button
-                onclick={() => {
-                    --$num;
-                    console.log($num || $bind);
-                    //@ts-ignore
-                    window.$q = $num || $bind;
-                }}
-            >
-                --
-            </button>
-            {$num}
-            <button onclick={() => ++$num}>++</button>
-            <div
-                className="box"
-                onmousemove={e => {
-                    $x = e.clientX;
-                    $y = e.clientY;
-                }}
-            >
-                Mouse position: x: {$x}, y: {$y}
-            </div>
+            {ToggleView(() => (
+                <div>
+                    {NumberThing($num || $bind)}
+                    {NumberThing($num || $bind)}
+                    {NumberThing($num || $bind)}
+                    <div
+                        className="box"
+                        onmousemove={e => {
+                            $x = e.clientX;
+                            $y = e.clientY;
+                        }}
+                    >
+                        Mouse position: x: {$x}, y: {$y}
+                    </div>
+                </div>
+            ))}
         </div>
     ).node
 );
