@@ -78,7 +78,7 @@ document.body.appendChild(
     ).node
 );
 
-type NestedT = { a: NestedT; b: NestedT } | undefined;
+type NestedT = { a: NestedT; b: NestedT; text: string } | undefined;
 
 function NestedTest($o: NestedT) {
     return (
@@ -86,6 +86,13 @@ function NestedTest($o: NestedT) {
             {$o ? (
                 <div>
                     <button onclick={() => ($o = undefined)}>Remove</button>
+                    <input
+                        type="text"
+                        value={$o.text}
+                        oninput={e =>
+                            ($o.text = (e.currentTarget as HTMLInputElement).value)
+                        }
+                    />
                     <ul>
                         <li>a: {NestedTest($o.a || $bind)}</li>
                         <li>b: {NestedTest($o.b || $bind)}</li>
@@ -94,7 +101,9 @@ function NestedTest($o: NestedT) {
             ) : (
                 <div>
                     <button
-                        onclick={() => ($o = { a: undefined, b: undefined })}
+                        onclick={() =>
+                            ($o = { a: undefined, b: undefined, text: "" })
+                        }
                     >
                         Create
                     </button>
@@ -106,6 +115,8 @@ function NestedTest($o: NestedT) {
 }
 
 let $nestedO: NestedT;
+document.body.appendChild(NestedTest($nestedO || $bind).node);
+
 document.body.appendChild(NestedTest($nestedO || $bind).node);
 
 let $showSection = true;
