@@ -13,7 +13,16 @@ let $y = 0;
 document.body.appendChild(
     (
         <div>
-            <button onclick={() => {console.log($num||$bind); --$num}}>--</button>
+            <button
+                onclick={() => {
+                    --$num;
+                    console.log($num || $bind);
+                    //@ts-ignore
+                    window.$q = $num || $bind;
+                }}
+            >
+                --
+            </button>
             {$num}
             <button onclick={() => ++$num}>++</button>
             <div

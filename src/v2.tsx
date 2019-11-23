@@ -49,22 +49,20 @@ export const watchable_cleanupfns = Symbol("cleanupfns");
 
 export abstract class WatchableBase<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
-    $ref: any;
+    abstract get $ref(): any;
+    abstract set $ref(v: any);
     [watchable_watch](watcher: (v: T) => void): () => void {
-        console.log("base watch was called on",this)
         if (this[watchable_watchers].length === 0) {
             this[watchable_setup]();
         }
         this[watchable_watchers].push(watcher);
         return () => {
-            console.log("removing self", this[watchable_watchers], watcher);
             this[watchable_watchers] = this[watchable_watchers].filter(
                 e => e !== watcher
             );
             if (this[watchable_watchers].length === 0) {
                 this[watchable_cleanup]();
             }
-            console.log("done", this[watchable_watchers], watcher);
         };
     }
     [watchable_emit](value: T) {
@@ -90,7 +88,7 @@ export class FakeWatchable extends WatchableBase<void> {
     parent: WatchableBase<any>;
     constructor(thing: any, parent: WatchableBase<void>) {
         super();
-        if(typeof thing === "function"){
+        if (typeof thing === "function") {
             thing = thing.bind(parent.$ref);
         }
         this.thing = thing;
@@ -106,7 +104,6 @@ export class FakeWatchable extends WatchableBase<void> {
         return new FakeWatchable(this.thing[v], this);
     }
     [watchable_watch](watcher: (v: any) => void) {
-        console.log("fw watch was called on",this)
         return this.parent[watchable_watch](watcher);
     }
 }
@@ -123,10 +120,9 @@ export class WatchableThing<T> extends WatchableBase<void> {
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
     set $ref(nv: any) {
-        console.log("$ref was used to set to ",nv);
         // !!!!!!!!!!!!!!!!!!!!!!!! emit to any above us (highest first)
         this[watchable_emit](); // emit before anything under us potentially emits
-        this.isUnused = true;
+        this.isUnused = false;
         if (typeof this.__v === "object" && typeof nv === "object") {
             // if is array, good luck...
             let existingKeys: { [key: string]: WatchableThing<any> } = {
@@ -155,6 +151,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         this.__v = nv;
     }
     get $ref() {
+        console.log("DID GET VALUE OF ", this);
         if (typeof this.__v === "object") {
             let newObject: any = {};
             Object.keys(this.__v).forEach(key => {
@@ -166,7 +163,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         return this.__v;
     }
     $get(v: string): WatchableBase<any> {
-        console.log("$get was used with ",v);
+        console.log("$get was used with ", v);
         if (typeof this.__v === "object") {
             if (!(v in this.__v)) {
                 this.__v[v] = new WatchableThing(undefined, true);
@@ -195,12 +192,17 @@ export interface Watchable<T> {
 }
 
 export class WatchableDependencyList<T> extends WatchableBase<T> {
+    get $ref(): any {
+        throw new Error("Method not implemented.");
+    }
+    set $ref(v: any) {
+        throw new Error("Method not implemented.");
+    }
     private [watchable_cb]: () => T;
     private [watchable_data]: Watchable<any>[];
     private [watchable_cleanupfns]: (() => void)[] = [];
     constructor(data: Watchable<any>[], cb: () => T) {
         super();
-        console.log("Created watchabledependency list with", data, cb);
         this[watchable_cb] = cb;
         this[watchable_data] = data;
     }
@@ -218,17 +220,10 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
                 dataToWatch[watchable_watch](() => {
                     // when any data changes
                     let valueToReturn = this[watchable_value](); // get our own value
-                    console.log(
-                        "SOME DATA CHANGED. WE RETURNED",
-                        valueToReturn,
-                        "TO OUR WATCHERS",
-                        this[watchable_watchers]
-                    );
                     this[watchable_emit](valueToReturn);
                 })
             );
         });
-        console.log("Watchabledependencylist setup was called", this);
     }
     [watchable_cleanup]() {
         this[watchable_cleanupfns].map(cfn => cfn());
