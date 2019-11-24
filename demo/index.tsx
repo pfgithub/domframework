@@ -78,7 +78,9 @@ document.body.appendChild(
     ).node
 );
 
-type NestedT = { a: NestedT; b: NestedT; text: string } | undefined;
+type NestedT =
+    | { a: NestedT; b: NestedT; text: string; counter: number }
+    | undefined;
 
 function NestedTest($o: NestedT) {
     return (
@@ -93,6 +95,7 @@ function NestedTest($o: NestedT) {
                             ($o.text = (e.currentTarget as HTMLInputElement).value)
                         }
                     />
+                    {NumberThing($o.counter || $bind)}
                     <ul>
                         <li>a: {NestedTest($o.a || $bind)}</li>
                         <li>b: {NestedTest($o.b || $bind)}</li>
@@ -102,7 +105,12 @@ function NestedTest($o: NestedT) {
                 <div>
                     <button
                         onclick={() =>
-                            ($o = { a: undefined, b: undefined, text: "" })
+                            ($o = {
+                                a: undefined,
+                                b: undefined,
+                                text: "",
+                                counter: 0
+                            })
                         }
                     >
                         Create
