@@ -115,12 +115,16 @@ export class WatchableThing<T> extends WatchableBase<void> {
         super();
         this.$ref = v;
         this.isUnused = isUnused;
+        // !!!!! if(isWatchable(v)) {
+        //   watch[v] and add to watchable_cleanup
+        // }
     }
     [watchable_value](): void {}
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
     set $ref(nv: any) {
         // !!!!!!!!!!!!!!!!!!!!!!!! emit to any above us (highest first)
+        // !!!!!!!!!!!!!!!!!!!!!!!! ^ the above should only happen to special watchers (forex a.b || $deep)
         this[watchable_emit](); // emit before anything under us potentially emits
         this.isUnused = false;
         if (typeof this.__v === "object" && typeof nv === "object") {
@@ -172,7 +176,11 @@ export class WatchableThing<T> extends WatchableBase<void> {
             let value = (this.__v as any)[v];
             return value;
         } else {
-            let value = new FakeWatchable((this.__v as any)[v], this);
+            let val = (this.__v as any)[v];
+            if (val[watchable_watch]) {
+                return val;
+            }
+            let value = new FakeWatchable(val, this);
             return value;
         }
     }
@@ -181,9 +189,102 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
 }
 
+type ListNode<T> = {
+    prev?: symbol;
+    self: T;
+    symbol: symbol;
+    next?: symbol;
+    removeSelf: () => void;
+};
+
+let symbolKey = (v: symbol): string => (v as unknown) as string;
+
+export class List<T> extends WatchableBase<void> {
+    [watchable_value](): void {}
+    [watchable_setup](): void {}
+    [watchable_cleanup](): void {}
+    private __first?: symbol;
+    private __items: { [key: string]: ListNode<T> };
+    private __last?: symbol;
+    private __length: WatchableThing<any>;
+    constructor(items: T[]) {
+        super();
+        this.__items = {};
+        this.__length = $.createWatchable(0);
+        items.forEach(item => this.push(item));
+    }
+    insert(
+        o: { after: symbol | undefined } | { before: symbol | undefined },
+        item: T
+    ) {
+        let thisItemSymbol = Symbol("new item");
+
+        let beforeItemSymbol =
+            "after" in o
+                ? o.after
+                : o.before
+                ? this.__items[symbolKey(o.before)].prev
+                : this.__last;
+        let beforeItem = beforeItemSymbol
+            ? this.__items[symbolKey(beforeItemSymbol)]
+            : undefined;
+
+        let afterItemSymbol = beforeItem ? beforeItem.next : this.__first;
+        let afterItem = afterItemSymbol
+            ? this.__items[symbolKey(afterItemSymbol)]
+            : undefined;
+
+        let thisItem: ListNode<T> = {
+            prev: beforeItemSymbol,
+            next: afterItemSymbol,
+            self: item,
+            symbol: thisItemSymbol,
+            removeSelf: () => {}
+        };
+
+        if (beforeItem) {
+            beforeItem.next = thisItemSymbol;
+        } else {
+            this.__first = thisItemSymbol;
+        }
+
+        if (afterItem) {
+            afterItem.prev = thisItemSymbol;
+        } else {
+            this.__last = thisItemSymbol;
+        }
+
+        this.__items[symbolKey(thisItemSymbol)] = thisItem;
+
+        this[watchable_emit](); // structure change
+        this.__length.$ref++;
+    }
+    get $ref() {
+        return [];
+    }
+    set $ref(nv: T[]) {
+        // setHelperSymbol = Symbol("set helper")
+        // on each item, set a sethelpersymbol
+        // use this to store values in a {} and diff
+        // o(n) probably whatever that means. or o(3n) if that exists.
+        throw new Error("list diff set is not supported yet");
+    }
+    push(item: T) {
+        this.insert({ after: this.__last }, item);
+    }
+    get length(): number {
+        return (this.__length as unknown) as number;
+    }
+}
+
+export function createList<T>(items: T[]): List<T> {
+    return new List(items);
+}
+
 export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
-    watch
+    watch,
+    list: createList
 };
 
 export interface Watchable<T> {
