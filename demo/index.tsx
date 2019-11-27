@@ -125,7 +125,7 @@ function NestedTest($o: NestedT) {
 let $nestedO: NestedT;
 document.body.appendChild(NestedTest($nestedO || $bind).node);
 
-document.body.appendChild(NestedTest($nestedO || $bind).node);
+document.body.appendChild(ToggleView(() => NestedTest($nestedO || $bind)).node);
 
 let $showSection = true;
 document.body.appendChild(
