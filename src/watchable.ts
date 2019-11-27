@@ -11,7 +11,7 @@ let nextTickInfo:
       }
     | undefined;
 
-function handleNextTick() {
+function _handleNextTick() {
     if (!nextTickInfo) return;
     nextTickInfo.handlers.forEach(handler => {
         // typescript flow control needs to be able to know
@@ -28,7 +28,7 @@ function nextTick(cb: () => void) {
             symbol: Symbol("next tick"),
             handlers: []
         };
-        setTimeout(() => handleNextTick(), 0);
+        setTimeout(() => _handleNextTick(), 0);
     }
     let itemSymbol = Symbol("cb to be called next tick");
     if ((cb as any)[nextTickInfo.symbol]) return; // handler already registered. no need to call it twice.

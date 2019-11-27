@@ -20,7 +20,7 @@ module.exports = {
                         "@babel/plugin-syntax-dynamic-import",
                         "@babel/plugin-proposal-class-properties",
                         "@babel/plugin-transform-react-jsx",
-                        "./src/concepts.js"
+                        "./src/babel/transform.js"
                     ]
                 }
             }

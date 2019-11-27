@@ -1,4 +1,4 @@
-import { WatchableThing, watchable_watch } from "../src/v2";
+import { WatchableThing, watchable_watch } from "../src/watchable";
 import { strict as assert } from "assert";
 
 async function test(name: string, cb: (t: {equal: (a: any, b: any) => void}) => Promise<void>){

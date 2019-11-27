@@ -1,6 +1,6 @@
 console.log("It works!");
 
-import "./drawBoxAroundElement";
+import "./debug/drawBoxAroundElement";
 
 import {
     watchable_watch,
@@ -13,7 +13,7 @@ import {
     watchable_emit,
     watchable_cleanup,
     Watchable
-} from "./v2";
+} from "./watchable";
 
 declare global {
     interface Window {

@@ -1,7 +1,7 @@
 "dmf prefix $";
 
-import { React } from "../src";
-import { $, $bind } from "../src/v2";
+import { React } from "../src/dom";
+import { $, $bind } from "../src/watchable";
 
 $;
 React;
