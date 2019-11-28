@@ -47,6 +47,8 @@ export const watchable_cleanup = Symbol("cleanup");
 export const watchable_watchers = Symbol("watchers");
 export const watchable_cleanupfns = Symbol("cleanupfns");
 
+export const should_be_raw = Symbol("should be raw");
+
 export abstract class WatchableBase<T> {
     [watchable_watchers]: ((v: T) => void)[] = [];
     abstract get $ref(): any;
@@ -128,7 +130,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         this[watchable_emit](); // emit before anything under us potentially emits
         this.isUnused = false;
         // if(self instanceof list) // do stuff
-        if (nv instanceof List) {
+        if (nv && nv[should_be_raw]) {
             // instead of manual if statements, why not have a proprety that says things
             // this.__v.$ref = nv;
             this.__v =nv;
@@ -163,7 +165,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     get $ref() {
         console.log("DID GET VALUE OF ", this);
-        if(this.__v instanceof List){ // if this.__v[some_property]
+        if(this.__v && this.__v[should_be_raw]){ // if this.__v[some_property]
             return this.__v;
         }
         if (typeof this.__v === "object") {
@@ -178,7 +180,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     $get(v: string): WatchableBase<any> {
         console.log("$get was used with ", v);
-        if(this.__v instanceof List){
+        if(this.__v && this.__v[should_be_raw]){
             return new FakeWatchable((this.__v as any)[v], this);
         }
         if (typeof this.__v === "object") {
@@ -225,6 +227,7 @@ export class List<T> {
     [watchable_value](): void {}
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
+    [should_be_raw]: true = true;
     private __first?: symbol;
     private __items: { [key: string]: ListNode<T> };
     private __last?: symbol;
