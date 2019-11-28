@@ -193,6 +193,29 @@ module.exports.default = function({ types: t }) {
                     }
                 });
             },
+            ArrowFunctionExpression(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    return;
+                }
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix
+                );
+                console.log("prefix node is", prefixNode);
+                if (!prefixNode) return;
+                let prefix = prefixNode.node.__dmf_prefix;
+
+                path.node.params.forEach(param => {
+                    if (
+                        param.type === "Identifier" &&
+                        matches(param.name, prefix)
+                    ) {
+                        param.__do_not_ref = true;
+                    }
+                });
+            },
             AssignmentPattern(path) {
                 if (
                     path.findParent(path => path.node.__is_supposed_to_skip) ||

@@ -127,6 +127,13 @@ export class WatchableThing<T> extends WatchableBase<void> {
         // !!!!!!!!!!!!!!!!!!!!!!!! ^ the above should only happen to special watchers (forex a.b || $deep)
         this[watchable_emit](); // emit before anything under us potentially emits
         this.isUnused = false;
+        // if(self instanceof list) // do stuff
+        if (nv instanceof List) {
+            // instead of manual if statements, why not have a proprety that says things
+            // this.__v.$ref = nv;
+            this.__v =nv;
+            return;
+        }
         if (typeof this.__v === "object" && typeof nv === "object") {
             // if is array, good luck...
             let existingKeys: { [key: string]: WatchableThing<any> } = {
@@ -156,6 +163,9 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     get $ref() {
         console.log("DID GET VALUE OF ", this);
+        if(this.__v instanceof List){ // if this.__v[some_property]
+            return this.__v;
+        }
         if (typeof this.__v === "object") {
             let newObject: any = {};
             Object.keys(this.__v).forEach(key => {
@@ -168,6 +178,9 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     $get(v: string): WatchableBase<any> {
         console.log("$get was used with ", v);
+        if(this.__v instanceof List){
+            return new FakeWatchable((this.__v as any)[v], this);
+        }
         if (typeof this.__v === "object") {
             if (!(v in this.__v)) {
                 this.__v[v] = new WatchableThing(undefined, true);
@@ -191,7 +204,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
 
 type ListNode<T> = {
     prev?: symbol;
-    self: T;
+    self: WatchableThing<T>;
     symbol: symbol;
     next?: symbol;
     removeSelf: () => void;
@@ -199,7 +212,16 @@ type ListNode<T> = {
 
 let symbolKey = (v: symbol): string => (v as unknown) as string;
 
-export class List<T> extends WatchableBase<void> {
+type AddCB<T> = (
+    item: WatchableThing<T>,
+    o: { before?: symbol; symbol: symbol; after?: symbol }
+) => void;
+type RemoveCB<T> = (
+    item: WatchableThing<T>,
+    o: { before?: symbol; symbol: symbol; after?: symbol }
+) => void;
+
+export class List<T> {
     [watchable_value](): void {}
     [watchable_setup](): void {}
     [watchable_cleanup](): void {}
@@ -207,17 +229,29 @@ export class List<T> extends WatchableBase<void> {
     private __items: { [key: string]: ListNode<T> };
     private __last?: symbol;
     private __length: WatchableThing<any>;
+    private __onAdd: AddCB<T>[];
+    private __onRemove: RemoveCB<T>[];
     constructor(items: T[]) {
-        super();
         this.__items = {};
+        this.__onAdd = [];
+        this.__onRemove = [];
         this.__length = $.createWatchable(0);
         items.forEach(item => this.push(item));
+    }
+    onAdd(cb: AddCB<T>) {
+        this.__onAdd.push(cb);
+        return () => (this.__onAdd = this.__onAdd.filter(v => v !== cb));
+    }
+    onRemove(cb: RemoveCB<T>) {
+        this.__onRemove.push(cb);
+        return () => (this.__onRemove = this.__onRemove.filter(v => v !== cb));
     }
     insert(
         o: { after: symbol | undefined } | { before: symbol | undefined },
         item: T
     ) {
         let thisItemSymbol = Symbol("new item");
+        let watchableItem = $.createWatchable(item);
 
         let beforeItemSymbol =
             "after" in o
@@ -237,7 +271,7 @@ export class List<T> extends WatchableBase<void> {
         let thisItem: ListNode<T> = {
             prev: beforeItemSymbol,
             next: afterItemSymbol,
-            self: item,
+            self: watchableItem,
             symbol: thisItemSymbol,
             removeSelf: () => {}
         };
@@ -256,13 +290,39 @@ export class List<T> extends WatchableBase<void> {
 
         this.__items[symbolKey(thisItemSymbol)] = thisItem;
 
-        this[watchable_emit](); // structure change
         this.__length.$ref++;
+        nextTick(() =>
+            this.__onAdd.forEach(oa =>
+                oa(watchableItem, {
+                    before: beforeItemSymbol,
+                    after: afterItemSymbol,
+                    symbol: thisItemSymbol
+                })
+            )
+        );
+        // next tick, emit add event
     }
-    get $ref() {
-        return [];
+    forEach(cb: (item: T) => void) {
+        let currentSymbol = this.__first;
+        while (currentSymbol) {
+            let item = this.__items[symbolKey(currentSymbol)];
+            cb(item.self.$ref);
+            currentSymbol = item.next;
+        }
+        return;
     }
-    set $ref(nv: T[]) {
+    displayEach(cb: (item: T) => void) {
+        // return <Fragment></Fragment>
+        // maybe not, that'd be a circular import
+        // call cb onitemadd
+        // remove item onremove
+    }
+    array() {
+        let resarr: T[] = [];
+        this.forEach(item => resarr.push(item));
+        return resarr;
+    }
+    updateDiff(nv: T[]) {
         // setHelperSymbol = Symbol("set helper")
         // on each item, set a sethelpersymbol
         // use this to store values in a {} and diff

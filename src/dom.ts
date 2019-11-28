@@ -12,7 +12,9 @@ import {
     watchable_setup,
     watchable_emit,
     watchable_cleanup,
-    Watchable
+    Watchable,
+    List,
+    WatchableThing
 } from "./watchable";
 
 declare global {
@@ -194,3 +196,56 @@ declare global {
         interface Element extends ExistingComponentModel {}
     }
 }
+
+export function ListRender<T>(list: List<T>, cb: (item: T) => JSX.Element) {
+    let baseNode = d("div", {});
+    let symbolToNodeAfterMap = {};
+    let removalHandlers = [];
+    removalHandlers.push(
+        list.onAdd(
+            (
+                item: WatchableThing<T>,
+                {
+                    before,
+                    symbol,
+                    after
+                }: { before: symbol; symbol: symbol; after: symbol }
+            ) => {
+                let resultElement = cb(item as unknown as T);
+                if (!symbolToNodeAfterMap[after])
+                    baseNode.node.appendChild(resultElement.node);
+                else
+                    baseNode.node.insertBefore(
+                        symbolToNodeAfterMap[after],
+                        resultElement.node
+                    );
+                symbolToNodeAfterMap[symbol] = resultElement;
+            }
+        )
+    );
+    removalHandlers.push(
+        list.onRemove(
+            (
+                item: WatchableThing<T>,
+                {
+                    before,
+                    symbol,
+                    after
+                }: { before: symbol; symbol: symbol; after: symbol }
+            ) => {
+                let element = symbolToNodeAfterMap[symbol];
+                element.removeSelf();
+            }
+        )
+    );
+    let existingRemove = baseNode.removeSelf;
+    baseNode.removeSelf = () => {
+        existingRemove();
+        removalHandlers.forEach(rh => rh());
+    };
+    return baseNode;
+}
+
+// TODO componentmodel is:
+// insert: (nodeAfter: Node) => {}
+// remove: () => {}

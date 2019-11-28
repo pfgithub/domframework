@@ -1,7 +1,7 @@
 "dmf prefix $";
 
-import { React } from "../src/dom";
-import { $, $bind } from "../src/watchable";
+import { React, ListRender } from "../src/dom";
+import { $, $bind, List } from "../src/watchable";
 
 $;
 React;
@@ -158,3 +158,19 @@ document.body.appendChild(
         </div>
     ).node
 );
+
+function TodoList($list: List<string>) {
+    console.log("LIST PUSH METHOD IS",$list.push,"LIST ITSELF IS",$list||$bind);
+        return (
+        <div>
+            {ListRender($list, $item => (
+                <div>Item: <input type="text" value={$item} oninput={(e: any) => $item = e.currentTarget.value} /></div>
+            ))}
+            <button onclick={() => $list.push("hmm")}>+</button>
+        </div>
+    );
+}
+
+let $list = $.list(["hi"]);
+document.body.appendChild(TodoList($list||$bind).node)
+document.body.appendChild(TodoList($list||$bind).node)
