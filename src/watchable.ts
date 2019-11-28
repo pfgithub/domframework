@@ -133,7 +133,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         if (nv && nv[should_be_raw]) {
             // instead of manual if statements, why not have a proprety that says things
             // this.__v.$ref = nv;
-            this.__v =nv;
+            this.__v = nv;
             return;
         }
         if (typeof this.__v === "object" && typeof nv === "object") {
@@ -165,7 +165,8 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     get $ref() {
         console.log("DID GET VALUE OF ", this);
-        if(this.__v && this.__v[should_be_raw]){ // if this.__v[some_property]
+        if (this.__v && this.__v[should_be_raw]) {
+            // if this.__v[some_property]
             return this.__v;
         }
         if (typeof this.__v === "object") {
@@ -180,7 +181,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
     }
     $get(v: string): WatchableBase<any> {
         console.log("$get was used with ", v);
-        if(this.__v && this.__v[should_be_raw]){
+        if (this.__v && this.__v[should_be_raw]) {
             return new FakeWatchable((this.__v as any)[v], this);
         }
         if (typeof this.__v === "object") {
@@ -340,14 +341,12 @@ export class List<T> {
     }
 }
 
-export function createList<T>(items: T[]): List<T> {
-    return new List(items);
-}
-
 export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
     watch,
-    list: createList
+    list<T>(items: T[]): List<T> {
+        return new List(items);
+    }
 };
 
 export interface Watchable<T> {

@@ -211,7 +211,7 @@ export function ListRender<T>(list: List<T>, cb: (item: T) => JSX.Element) {
                     after
                 }: { before: symbol; symbol: symbol; after: symbol }
             ) => {
-                let resultElement = cb(item as unknown as T);
+                let resultElement = cb((item as unknown) as T);
                 if (!symbolToNodeAfterMap[after])
                     baseNode.node.appendChild(resultElement.node);
                 else

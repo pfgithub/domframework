@@ -1,7 +1,10 @@
 import { WatchableThing, watchable_watch } from "../src/watchable";
 import { strict as assert } from "assert";
 
-async function test(name: string, cb: (t: {equal: (a: any, b: any) => void}) => Promise<void>){
+async function test(
+    name: string,
+    cb: (t: { equal: (a: any, b: any) => void }) => Promise<void>
+) {
     let assertCount = cb.toString().split("assert").length - 2;
     let successes = 0;
     process.stdout.write(" .".repeat(assertCount) + "\r");
@@ -14,9 +17,9 @@ async function test(name: string, cb: (t: {equal: (a: any, b: any) => void}) => 
     });
     console.log("");
     assert.deepStrictEqual(successes, assertCount);
-};
+}
 
-test("emitters", async (assert) => {
+test("emitters", async assert => {
     let eventsThisTick: 1[] = [];
     let tick = () => {
         eventsThisTick = [];
@@ -46,7 +49,10 @@ test("emitters", async (assert) => {
     assert.equal(eventsThisTick, [1]);
 
     assert.equal(testThing.$get("propname").$ref, "oh it's back");
-    assert.equal((testThing.$get("propname") as any).$get("toString").$ref(), "oh it's back");
+    assert.equal(
+        (testThing.$get("propname") as any).$get("toString").$ref(),
+        "oh it's back"
+    );
     // as/**/ */sert.deepStrictEqual(testThing.$ref, { propname: "oh it's back" }); // todo
     // console.log("testthing is: " + JSON.stringify(testThing));
 });

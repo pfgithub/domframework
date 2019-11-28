@@ -160,11 +160,17 @@ document.body.appendChild(
 );
 
 function TodoList($list: List<string>) {
-    console.log("LIST PUSH METHOD IS",$list.push,"LIST ITSELF IS",$list||$bind);
-        return (
+    return (
         <div>
             {ListRender($list, $item => (
-                <div>Item: <input type="text" value={$item} oninput={(e: any) => $item = e.currentTarget.value} /></div>
+                <div>
+                    Item:{" "}
+                    <input
+                        type="text"
+                        value={$item}
+                        oninput={(e: any) => ($item = e.currentTarget.value)}
+                    />
+                </div>
             ))}
             <button onclick={() => $list.push("hmm")}>+</button>
         </div>
@@ -172,5 +178,38 @@ function TodoList($list: List<string>) {
 }
 
 let $list = $.list(["hi"]);
-document.body.appendChild(TodoList($list||$bind).node)
-document.body.appendChild(TodoList($list||$bind).node)
+document.body.appendChild(TodoList($list || $bind).node);
+document.body.appendChild(TodoList($list || $bind).node);
+
+type NodeType = { num: number; subitems: List<NodeType> };
+
+function NodeTestThing($list: List<NodeType>) {
+    return (
+        <div>
+            <ul>
+                {ListRender($list, $node => (
+                    <li>
+                        <div>
+                            {NumberThing($node.num || $bind)},{" "}
+                            {NodeTestThing($node.subitems || $bind)}
+                        </div>
+                    </li>
+                ))}
+                <li>
+                    {" "}
+                    <button
+                        onclick={() =>
+                            $list.push({ num: 5, subitems: $.list([]) })
+                        }
+                    >
+                        +
+                    </button>
+                </li>
+            </ul>
+        </div>
+    );
+}
+
+let $listTest = $.list<NodeType>([]);
+document.body.appendChild(NodeTestThing($listTest || $bind).node);
+document.body.appendChild(NodeTestThing($listTest || $bind).node);
