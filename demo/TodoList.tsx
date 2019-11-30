@@ -49,6 +49,9 @@ function TodoList($list: List<TodoItem>) {
                             // we don't need to rerender this!!
                             // it should be wrapped in something that only
                             // rerenders it when $item.checked, $item.contents changes, not $filter
+                            // when this entire section gets rerendered as you are typing
+                            // (because $item.contents.indexOf)
+                            // the input loses focus
                             <li>
                                 <input
                                     type="checkbox"
