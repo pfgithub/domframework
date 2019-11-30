@@ -46,7 +46,7 @@ function TodoList($list: List<TodoItem>) {
                             type="text"
                             value={$item.contents}
                             oninput={e =>
-                                ($item.contents = (e.currentTarget as any).contents)
+                                ($item.contents = (e.currentTarget as any).value)
                             }
                         />
                     </li>
