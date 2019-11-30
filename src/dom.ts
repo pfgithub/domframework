@@ -150,7 +150,14 @@ export const d = (
     // bind value changes to watch
 };
 
-export let React = { createElement: d };
+export let React = {
+    createElement: d,
+    Fragment: () => {
+        let res = d("div", { className: "dmf_fragment" });
+        (res.node as HTMLDivElement).style.display = "contents";
+        return res;
+    }
+};
 
 // type RealOrWatchable<T> = T | Watchable<T>;
 

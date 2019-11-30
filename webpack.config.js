@@ -4,7 +4,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const ProgressBarPlugin = require("progress-bar-webpack-plugin");
 
 module.exports = {
-    entry: "./demo/index.tsx",
+    entry: "./demo/TodoList.tsx",
     devtool: "inline-source-map",
     mode: "development",
     module: {
