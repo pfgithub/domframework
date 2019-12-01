@@ -31,7 +31,7 @@ function TodoList($list: List<TodoItem>) {
                         placeholder: "What to do...",
                         onkeypress: e => {
                             if (e.code === "Enter") {
-                                $list.push({
+                                $list.unshift({
                                     checked: false,
                                     contents: $wipItem
                                 });

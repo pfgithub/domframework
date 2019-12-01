@@ -360,6 +360,9 @@ export class List<T> {
     push(item: T) {
         this.insert({ after: this.__last }, item);
     }
+    unshift(item: T) {
+        this.insert({ before: this.__first }, item);
+    }
     get length(): number {
         return (this.__length as unknown) as number;
     }
