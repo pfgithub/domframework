@@ -106,8 +106,39 @@ function TodoList($list: List<TodoItem>) {
 }
 
 let $list: List<TodoItem> = $.list([]);
-document.body.appendChild(TodoList($list || $bind).node);
-document.body.appendChild(TodoList($list || $bind).node);
+let $listOfTodoLists: List<0> = $.list([0]);
+document.body.appendChild(
+    ListRender($listOfTodoLists, ($item, symbol) => {
+        let $confirmVisible = false;
+        return (
+            <>
+                {TodoList($list || $bind)}
+                <div>
+                    {$confirmVisible ? (
+                        <>
+                            Are you sure?{" "}
+                            <button
+                                onclick={() => $listOfTodoLists.remove(symbol)}
+                            >
+                                Remove
+                            </button>
+                            <button onclick={() => ($confirmVisible = false)}>
+                                Cancel
+                            </button>
+                        </>
+                    ) : (
+                        <button onclick={() => ($confirmVisible = true)}>
+                            x
+                        </button>
+                    )}
+                </div>
+            </>
+        );
+    }).node
+);
+document.body.appendChild(
+    (<button onclick={() => $listOfTodoLists.push(0)}>+</button>).node
+);
 
 export function HighlightUpdatesButton() {
     let $showSection = true;

@@ -222,8 +222,16 @@ export function ListRender<T>(
     let baseNode = d("div", {});
     let symbolToNodeAfterMap: { [key: string]: ChildNode } = {};
     let removalHandlers: (() => void)[] = [];
+    list.forEach((item, symbol) => {
+        let resultElement = cb(item, symbol);
+        baseNode.node.appendChild(resultElement.node);
+        symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
+    });
     removalHandlers.push(
         list.onAdd((item, { before, symbol, after }) => {
+            if (symbolToNodeAfterMap[symbolKey(symbol)]) {
+                return;
+            }
             let resultElement = cb((item as unknown) as T, symbol);
             if (!after || !symbolToNodeAfterMap[symbolKey(after)])
                 baseNode.node.appendChild(resultElement.node);

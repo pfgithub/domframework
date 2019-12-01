@@ -334,7 +334,7 @@ export class List<T> {
         let currentSymbol = this.__first;
         while (currentSymbol) {
             let item = this.__items[symbolKey(currentSymbol)];
-            cb(item.self.$ref, item.symbol);
+            cb((item.self as unknown) as T, item.symbol);
             currentSymbol = item.next;
         }
         return;
