@@ -219,10 +219,11 @@ type AddCB<T> = (
     item: WatchableThing<T>,
     o: { before?: symbol; symbol: symbol; after?: symbol }
 ) => void;
-type RemoveCB<T> = (
-    item: WatchableThing<T>,
-    o: { before?: symbol; symbol: symbol; after?: symbol }
-) => void;
+type RemoveCB<T> = (o: {
+    before?: symbol;
+    symbol: symbol;
+    after?: symbol;
+}) => void;
 
 export class List<T> {
     [watchable_value](): void {}
@@ -306,11 +307,34 @@ export class List<T> {
         );
         // next tick, emit add event
     }
-    forEach(cb: (item: T) => void) {
+    remove(itemSymbol: symbol) {
+        let item = this.__items[symbolKey(itemSymbol)];
+        let prevItem = this.__items[symbolKey(item.prev!)] as
+            | ListNode<T>
+            | undefined;
+        let nextItem = this.__items[symbolKey(item.next!)] as
+            | ListNode<T>
+            | undefined;
+        if (prevItem) prevItem.next = item.next;
+        if (nextItem) nextItem.prev = item.prev;
+        if (!prevItem) this.__first = item.next;
+        if (!nextItem) this.__last = item.prev;
+
+        nextTick(() =>
+            this.__onRemove.forEach(or =>
+                or({
+                    before: item.prev,
+                    after: item.next,
+                    symbol: item.symbol
+                })
+            )
+        );
+    }
+    forEach(cb: (item: T, symbol: symbol) => void) {
         let currentSymbol = this.__first;
         while (currentSymbol) {
             let item = this.__items[symbolKey(currentSymbol)];
-            cb(item.self.$ref);
+            cb(item.self.$ref, item.symbol);
             currentSymbol = item.next;
         }
         return;

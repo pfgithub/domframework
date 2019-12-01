@@ -215,13 +215,16 @@ declare global {
     }
 }
 
-export function ListRender<T>(list: List<T>, cb: (item: T) => JSX.Element) {
+export function ListRender<T>(
+    list: List<T>,
+    cb: (item: T, symbol: symbol) => JSX.Element
+) {
     let baseNode = d("div", {});
     let symbolToNodeAfterMap: { [key: string]: ChildNode } = {};
     let removalHandlers: (() => void)[] = [];
     removalHandlers.push(
         list.onAdd((item, { before, symbol, after }) => {
-            let resultElement = cb((item as unknown) as T);
+            let resultElement = cb((item as unknown) as T, symbol);
             if (!after || !symbolToNodeAfterMap[symbolKey(after)])
                 baseNode.node.appendChild(resultElement.node);
             else
@@ -233,7 +236,7 @@ export function ListRender<T>(list: List<T>, cb: (item: T) => JSX.Element) {
         })
     );
     removalHandlers.push(
-        list.onRemove((item, { before, symbol, after }) => {
+        list.onRemove(({ before, symbol, after }) => {
             let element = symbolToNodeAfterMap[symbolKey(symbol!)];
             element.remove();
         })

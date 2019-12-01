@@ -42,7 +42,8 @@ function TodoList($list: List<TodoItem>) {
                         }
                     />
                 </li>
-                {ListRender($list, $item => {
+                {ListRender($list, ($item, symbol) => {
+                    let $showRemoveConfirm = false;
                     let item = (
                         <li>
                             <input
@@ -59,6 +60,29 @@ function TodoList($list: List<TodoItem>) {
                                     ($item.contents = (e.currentTarget as any).value)
                                 }
                             />
+                            {$showRemoveConfirm ? (
+                                <>
+                                    Are you sure?{" "}
+                                    <button
+                                        onclick={() => $list.remove(symbol)}
+                                    >
+                                        Remove
+                                    </button>
+                                    <button
+                                        onclick={() =>
+                                            ($showRemoveConfirm = false)
+                                        }
+                                    >
+                                        Cancel
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onclick={() => ($showRemoveConfirm = true)}
+                                >
+                                    x
+                                </button>
+                            )}
                         </li>
                     );
                     return (
