@@ -213,7 +213,7 @@ type ListNode<T> = {
     removeSelf: () => void;
 };
 
-let symbolKey = (v: symbol): string => (v as unknown) as string;
+export let symbolKey = (v: symbol): string => (v as unknown) as string;
 
 type AddCB<T> = (
     item: WatchableThing<T>,

@@ -14,7 +14,8 @@ import {
     watchable_cleanup,
     Watchable,
     List,
-    WatchableThing
+    WatchableThing,
+    symbolKey
 } from "./watchable";
 
 declare global {
@@ -206,44 +207,26 @@ declare global {
 
 export function ListRender<T>(list: List<T>, cb: (item: T) => JSX.Element) {
     let baseNode = d("div", {});
-    let symbolToNodeAfterMap = {};
-    let removalHandlers = [];
+    let symbolToNodeAfterMap: { [key: string]: ChildNode } = {};
+    let removalHandlers: (() => void)[] = [];
     removalHandlers.push(
-        list.onAdd(
-            (
-                item: WatchableThing<T>,
-                {
-                    before,
-                    symbol,
-                    after
-                }: { before: symbol; symbol: symbol; after: symbol }
-            ) => {
-                let resultElement = cb((item as unknown) as T);
-                if (!symbolToNodeAfterMap[after])
-                    baseNode.node.appendChild(resultElement.node);
-                else
-                    baseNode.node.insertBefore(
-                        symbolToNodeAfterMap[after],
-                        resultElement.node
-                    );
-                symbolToNodeAfterMap[symbol] = resultElement;
-            }
-        )
+        list.onAdd((item, { before, symbol, after }) => {
+            let resultElement = cb((item as unknown) as T);
+            if (!after || !symbolToNodeAfterMap[symbolKey(after)])
+                baseNode.node.appendChild(resultElement.node);
+            else
+                baseNode.node.insertBefore(
+                    symbolToNodeAfterMap[symbolKey(after)],
+                    resultElement.node
+                );
+            symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
+        })
     );
     removalHandlers.push(
-        list.onRemove(
-            (
-                item: WatchableThing<T>,
-                {
-                    before,
-                    symbol,
-                    after
-                }: { before: symbol; symbol: symbol; after: symbol }
-            ) => {
-                let element = symbolToNodeAfterMap[symbol];
-                element.removeSelf();
-            }
-        )
+        list.onRemove((item, { before, symbol, after }) => {
+            let element = symbolToNodeAfterMap[symbolKey(symbol!)];
+            element.remove();
+        })
     );
     let existingRemove = baseNode.removeSelf;
     baseNode.removeSelf = () => {
