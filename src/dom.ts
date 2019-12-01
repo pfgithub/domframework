@@ -60,8 +60,12 @@ export function createComponent(
         insert(finalNode);
         let removalFunctions: (() => void)[] = [];
         let o = 0;
+        let previousModel: ComponentModel | undefined;
         let updateValue = (model: ComponentModel) => {
             if (o++) console.log("UPDATE VALUE WAS CALLED BY WATCHABLE");
+            // check if the model is the same
+            if (previousModel && previousModel === model) return; // skip
+            previousModel = model;
             // clear outdated nodes
             removalFunctions.map(rf => rf());
             removalFunctions = [];

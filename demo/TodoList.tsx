@@ -42,37 +42,39 @@ function TodoList($list: List<TodoItem>) {
                         }
                     />
                 </li>
-                {ListRender($list, $item => (
-                    <div>
-                        {$item.contents.indexOf($filter) > -1 ? (
-                            // here is an issue!
-                            // we don't need to rerender this!!
-                            // it should be wrapped in something that only
-                            // rerenders it when $item.checked, $item.contents changes, not $filter
-                            // when this entire section gets rerendered as you are typing
-                            // (because $item.contents.indexOf)
-                            // the input loses focus
-                            <li>
-                                <input
-                                    type="checkbox"
-                                    checked={$item.checked}
-                                    oninput={e =>
-                                        ($item.checked = (e.currentTarget as any).checked)
-                                    }
-                                />{" "}
-                                <input
-                                    type="text"
-                                    value={$item.contents}
-                                    oninput={e =>
-                                        ($item.contents = (e.currentTarget as any).value)
-                                    }
-                                />
-                            </li>
-                        ) : (
-                            <li>does not match filter</li>
-                        )}
-                    </div>
-                ))}
+                {ListRender($list, $item => {
+                    let item = (
+                        <li>
+                            <input
+                                type="checkbox"
+                                checked={$item.checked}
+                                oninput={e =>
+                                    ($item.checked = (e.currentTarget as any).checked)
+                                }
+                            />{" "}
+                            <input
+                                type="text"
+                                value={$item.contents}
+                                oninput={e =>
+                                    ($item.contents = (e.currentTarget as any).value)
+                                }
+                            />
+                        </li>
+                    );
+                    return (
+                        <div>
+                            {$item.contents.indexOf($filter) > -1 ? (
+                                // if(different) rerender
+                                // easiest way would be to check if the node changed
+                                // but that makes less clean code.
+                                // trying...
+                                item
+                            ) : (
+                                <li>does not match filter</li>
+                            )}
+                        </div>
+                    );
+                })}
             </ul>
         </div>
     );
