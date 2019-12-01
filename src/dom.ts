@@ -233,12 +233,16 @@ export function ListRender<T>(
                 return;
             }
             let resultElement = cb((item as unknown) as T, symbol);
+            console.log(
+                "Found node. Going to insert before",
+                symbolToNodeAfterMap[symbolKey(after!)]
+            );
             if (!after || !symbolToNodeAfterMap[symbolKey(after)])
                 baseNode.node.appendChild(resultElement.node);
             else
                 baseNode.node.insertBefore(
-                    symbolToNodeAfterMap[symbolKey(after)],
-                    resultElement.node
+                    resultElement.node,
+                    symbolToNodeAfterMap[symbolKey(after)]
                 );
             symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
         })

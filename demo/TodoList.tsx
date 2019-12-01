@@ -58,9 +58,27 @@ function TodoList($list: List<TodoItem>) {
                             <input
                                 type="text"
                                 value={$item.contents}
+                                nodecreated={node =>
+                                    setTimeout(
+                                        () =>
+                                            !$item.contents ? node.focus() : 0,
+                                        0
+                                    )
+                                }
                                 oninput={e =>
                                     ($item.contents = (e.currentTarget as any).value)
                                 }
+                                onkeypress={e => {
+                                    if (e.code === "Enter") {
+                                        $list.insert(
+                                            { after: symbol },
+                                            {
+                                                checked: false,
+                                                contents: ""
+                                            }
+                                        );
+                                    }
+                                }}
                             />
                             {$showRemoveConfirm ? (
                                 <>
