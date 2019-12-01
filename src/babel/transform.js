@@ -13,6 +13,20 @@ delete $a.b.c
 EXPECTED: $a.get("b").delete("c")
 GOT: delete $a.get("b").get("c").$ref
 
+
+<>{$a.b().c > d ? <></> : <></>}</>
+
+<>{watch([$a.b], (____prev, ___skip) => {
+let ____curr = {};
+____curr._1 = $a.get("b").$ref().c > d
+if(____curr._1 === ____prev.ref._1){
+  return ___skip();
+}
+
+return ____curr._1 ? <></> : <></>
+
+})}</>
+
 */
 
 Object.defineProperty(exports, "__esModule", {
