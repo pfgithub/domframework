@@ -8,6 +8,16 @@ React;
 
 type TodoItem = { checked: boolean; contents: string };
 
+function ManagedTextInput($text: string, props) {
+    return (
+        <input
+            value={$text}
+            oninput={e => ($text = (e.currentTarget as HTMLInputElement).value)}
+            {...props}
+        />
+    );
+}
+
 function TodoList($list: List<TodoItem>) {
     let $wipItem = "";
     let $filter = "";
@@ -16,14 +26,10 @@ function TodoList($list: List<TodoItem>) {
             <h1>Todo List</h1>
             <ul>
                 <li>
-                    <input
-                        type="text"
-                        placeholder="What to do..."
-                        value={$wipItem}
-                        oninput={e =>
-                            ($wipItem = (e.currentTarget as any).value)
-                        }
-                        onkeypress={e => {
+                    {ManagedTextInput($wipItem || $bind, {
+                        type: "text",
+                        placeholder: "What to do...",
+                        onkeypress: e => {
                             if (e.code === "Enter") {
                                 $list.push({
                                     checked: false,
@@ -31,16 +37,12 @@ function TodoList($list: List<TodoItem>) {
                                 });
                                 $wipItem = "";
                             }
-                        }}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Filter..."
-                        value={$filter}
-                        oninput={e =>
-                            ($filter = (e.currentTarget as any).value)
                         }
-                    />
+                    })}
+                    {ManagedTextInput($filter || $bind, {
+                        type: "text",
+                        placeholder: "Filter..."
+                    })}
                 </li>
                 {ListRender($list, ($item, symbol) => {
                     let $showRemoveConfirm = false;
