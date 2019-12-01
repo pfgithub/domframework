@@ -157,10 +157,16 @@ export const d = (
 
 export let React = {
     createElement: d,
-    Fragment: () => {
-        let res = d("div", { className: "dmf_fragment" });
-        (res.node as HTMLDivElement).style.display = "contents";
-        return res;
+    Fragment: (props: { children?: ComponentModel[] }) => {
+        console.log("Creating fragment with", props);
+        return React.createElement(
+            "div",
+            {
+                className: "divspam",
+                nodecreated: node => (node.style.display = "contents")
+            },
+            ...(props.children || [""])
+        );
     }
 };
 

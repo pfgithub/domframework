@@ -12,7 +12,7 @@ function TodoList($list: List<TodoItem>) {
     let $wipItem = "";
     let $filter = "";
     return (
-        <div>
+        <>
             <h1>Todo List</h1>
             <ul>
                 <li>
@@ -62,21 +62,20 @@ function TodoList($list: List<TodoItem>) {
                         </li>
                     );
                     return (
-                        <div>
+                        <>
                             {$item.contents.indexOf($filter) > -1 ? (
-                                // if(different) rerender
-                                // easiest way would be to check if the node changed
-                                // but that makes less clean code.
-                                // trying...
+                                // one fix would be to add $item.contents.indexOf($filter) > -1
+                                // to watch itself so if it changes this rerenders
+                                // but not if it doesn't change
                                 item
                             ) : (
                                 <li>does not match filter</li>
                             )}
-                        </div>
+                        </>
                     );
                 })}
             </ul>
-        </div>
+        </>
     );
 }
 
@@ -89,7 +88,7 @@ export function HighlightUpdatesButton() {
     return (
         <div>
             {$showSection ? (
-                <div>
+                <>
                     <button
                         onclick={() => {
                             window.startHighlightUpdates();
@@ -108,9 +107,9 @@ export function HighlightUpdatesButton() {
                     <button onclick={() => (window.onNodeUpdate = () => {})}>
                         ignore updates
                     </button>
-                </div>
+                </>
             ) : (
-                <div></div>
+                <></>
             )}
         </div>
     );

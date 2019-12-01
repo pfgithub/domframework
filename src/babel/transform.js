@@ -166,7 +166,6 @@ module.exports.default = function({ types: t }) {
                     let file = path.findParent(path => !!path.node.directives)
                         .node;
                     file.__dmf_prefix = path.node.value.value.substr(11);
-                    console.log("set dmf prefix of", file);
                     path.remove();
                 }
             },
@@ -180,7 +179,6 @@ module.exports.default = function({ types: t }) {
                 let prefixNode = path.findParent(
                     path => path.node.__dmf_prefix
                 );
-                console.log("prefix node is", prefixNode);
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
 
@@ -203,7 +201,6 @@ module.exports.default = function({ types: t }) {
                 let prefixNode = path.findParent(
                     path => path.node.__dmf_prefix
                 );
-                console.log("prefix node is", prefixNode);
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
 
