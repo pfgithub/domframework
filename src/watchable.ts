@@ -388,16 +388,20 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
     set $ref(v: any) {
         throw new Error("Method not implemented.");
     }
-    private [watchable_cb]: () => T;
+    private [watchable_cb]: (prev: { ref: any }, skip: () => void) => T;
     private [watchable_data]: Watchable<any>[];
     private [watchable_cleanupfns]: (() => void)[] = [];
+    private prevValue: { ref: any } = { ref: {} };
     constructor(data: Watchable<any>[], cb: () => T) {
         super();
         this[watchable_cb] = cb;
         this[watchable_data] = data;
     }
     [watchable_value]() {
-        return this[watchable_cb]();
+        return this[watchable_cb](this.prevValue, () => {
+            // cancel somehow
+            return "this should never happen";
+        });
     }
     [watchable_emit](value: T) {
         this[watchable_watchers].map(w => {
@@ -410,6 +414,7 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
                 dataToWatch[watchable_watch](() => {
                     // when any data changes
                     let valueToReturn = this[watchable_value](); // get our own value
+                    // !!!!--- here, check if canceled
                     this[watchable_emit](valueToReturn);
                 })
             );

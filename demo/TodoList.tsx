@@ -49,9 +49,6 @@ function TodoList($list: List<TodoItem>) {
                     return (
                         <>
                             {$item.contents.indexOf($filter) > -1 ? (
-                                // one fix would be to add $item.contents.indexOf($filter) > -1
-                                // to watch itself so if it changes this rerenders
-                                // but not if it doesn't change
                                 <li>
                                     <input
                                         type="checkbox"

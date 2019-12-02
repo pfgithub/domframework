@@ -27,6 +27,8 @@ return ____curr._1 ? <></> : <></>
 
 })}</>
 
+// just doing ? for now. more needs to be done though.
+
 */
 
 Object.defineProperty(exports, "__esModule", {
@@ -348,6 +350,7 @@ module.exports.default = function({ types: t }) {
                     let prefix = prefixNode.node.__dmf_prefix;
 
                     let watchables = [];
+                    let tests = [];
                     path.traverse({
                         // traverse once again and add .ref to watchables
                         JSXExpressionContainer(path) {
@@ -363,6 +366,16 @@ module.exports.default = function({ types: t }) {
                             ) {
                                 watchables.push(path.node.object);
                             }
+                        },
+                        ConditionalExpression: {
+                            exit(path) {
+                                // test goes into its own thing
+                                let newL = tests.push(path.node.test);
+                                path.node.test = t.memberExpression(
+                                    t.identifier("____curr"),
+                                    t.identifier("_" + (newL - 1))
+                                );
+                            }
                         }
                     });
 
@@ -372,7 +385,64 @@ module.exports.default = function({ types: t }) {
                     }
                     path.node.expression = t.callExpression($call`watch`, [
                         t.arrayExpression(watchables),
-                        t.arrowFunctionExpression([], path.node.expression)
+                        t.arrowFunctionExpression(
+                            [
+                                t.identifier("____prev"),
+                                t.identifier("____skip")
+                            ],
+                            t.blockStatement([
+                                t.variableDeclaration("const", [
+                                    t.variableDeclarator(
+                                        t.identifier("____curr"),
+                                        t.objectExpression(
+                                            tests.map((test, index) =>
+                                                t.objectProperty(
+                                                    t.identifier("_" + index),
+                                                    test
+                                                )
+                                            )
+                                        )
+                                    )
+                                ]),
+                                ...tests.map((test, index) =>
+                                    t.ifStatement(
+                                        t.binaryExpression(
+                                            "===",
+                                            t.memberExpression(
+                                                t.identifier("____curr"),
+                                                t.identifier("_" + index)
+                                            ),
+                                            t.memberExpression(
+                                                t.memberExpression(
+                                                    t.identifier("____prev"),
+                                                    t.identifier("ref")
+                                                ),
+                                                t.identifier("_" + index)
+                                            )
+                                        ),
+                                        t.blockStatement([
+                                            t.returnStatement(
+                                                t.callExpression(
+                                                    t.identifier("____skip"),
+                                                    []
+                                                )
+                                            )
+                                        ])
+                                    )
+                                ),
+                                t.expressionStatement(
+                                    t.assignmentExpression(
+                                        "=",
+                                        t.memberExpression(
+                                            t.identifier("____prev"),
+                                            t.identifier("ref")
+                                        ),
+                                        t.identifier("____curr")
+                                    )
+                                ),
+                                t.returnStatement(path.node.expression)
+                            ])
+                        )
                     ]);
                     path.skip();
                     path.node.expression.__is_supposed_to_skip = true;
