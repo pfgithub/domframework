@@ -21,6 +21,7 @@ function ManagedTextInput($text: string, props) {
 function TodoList($list: List<TodoItem>) {
     let $wipItem = "";
     let $filter = "";
+    let thisShouldFocus = false;
     return (
         <>
             <h1>Todo List</h1>
@@ -63,8 +64,9 @@ function TodoList($list: List<TodoItem>) {
                                         nodecreated={node =>
                                             setTimeout(
                                                 () =>
-                                                    !$item.contents
-                                                        ? node.focus()
+                                                    thisShouldFocus
+                                                        ? (node.focus(),
+                                                          (thisShouldFocus = false))
                                                         : 0,
                                                 0
                                             )
@@ -74,6 +76,7 @@ function TodoList($list: List<TodoItem>) {
                                         }
                                         onkeypress={e => {
                                             if (e.code === "Enter") {
+                                                thisShouldFocus = true;
                                                 $list.insert(
                                                     { after: symbol },
                                                     {
