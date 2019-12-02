@@ -388,7 +388,7 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
     set $ref(v: any) {
         throw new Error("Method not implemented.");
     }
-    private [watchable_cb]: (prev: { ref: any }, skip: () => void) => T;
+    private [watchable_cb]: (prev: { ref: any }, skip: () => boolean) => T;
     private [watchable_data]: Watchable<any>[];
     private [watchable_cleanupfns]: (() => void)[] = [];
     private prevValue: { ref: any } = { ref: {} };
@@ -398,10 +398,12 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
         this[watchable_data] = data;
     }
     [watchable_value]() {
-        return this[watchable_cb](this.prevValue, () => {
-            // cancel somehow
-            return "this should never happen";
-        });
+        return this[watchable_cb](this.prevValue, () => false);
+    }
+    optionalWatchableValue(): [boolean, T] {
+        let canceled = false;
+        let r = this[watchable_cb](this.prevValue, () => (canceled = true));
+        return [canceled, r];
     }
     [watchable_emit](value: T) {
         this[watchable_watchers].map(w => {
@@ -413,8 +415,11 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
             this[watchable_cleanupfns].push(
                 dataToWatch[watchable_watch](() => {
                     // when any data changes
-                    let valueToReturn = this[watchable_value](); // get our own value
-                    // !!!!--- here, check if canceled
+                    let [
+                        canceled,
+                        valueToReturn
+                    ] = this.optionalWatchableValue(); // get our own value
+                    if (canceled) return;
                     this[watchable_emit](valueToReturn);
                 })
             );

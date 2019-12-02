@@ -421,11 +421,14 @@ module.exports.default = function({ types: t }) {
                                             )
                                         ),
                                         t.blockStatement([
-                                            t.returnStatement(
+                                            t.ifStatement(
                                                 t.callExpression(
                                                     t.identifier("____skip"),
                                                     []
-                                                )
+                                                ),
+                                                t.blockStatement([
+                                                    t.returnStatement()
+                                                ])
                                             )
                                         ])
                                     )
