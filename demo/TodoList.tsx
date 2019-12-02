@@ -46,72 +46,75 @@ function TodoList($list: List<TodoItem>) {
                 </li>
                 {ListRender($list, ($item, symbol) => {
                     let $showRemoveConfirm = false;
-                    let item = (
-                        <li>
-                            <input
-                                type="checkbox"
-                                checked={$item.checked}
-                                oninput={e =>
-                                    ($item.checked = (e.currentTarget as any).checked)
-                                }
-                            />{" "}
-                            <input
-                                type="text"
-                                value={$item.contents}
-                                nodecreated={node =>
-                                    setTimeout(
-                                        () =>
-                                            !$item.contents ? node.focus() : 0,
-                                        0
-                                    )
-                                }
-                                oninput={e =>
-                                    ($item.contents = (e.currentTarget as any).value)
-                                }
-                                onkeypress={e => {
-                                    if (e.code === "Enter") {
-                                        $list.insert(
-                                            { after: symbol },
-                                            {
-                                                checked: false,
-                                                contents: ""
-                                            }
-                                        );
-                                    }
-                                }}
-                            />
-                            {$showRemoveConfirm ? (
-                                <>
-                                    Are you sure?{" "}
-                                    <button
-                                        onclick={() => $list.remove(symbol)}
-                                    >
-                                        Remove
-                                    </button>
-                                    <button
-                                        onclick={() =>
-                                            ($showRemoveConfirm = false)
-                                        }
-                                    >
-                                        Cancel
-                                    </button>
-                                </>
-                            ) : (
-                                <button
-                                    onclick={() => ($showRemoveConfirm = true)}
-                                >
-                                    x
-                                </button>
-                            )}
-                        </li>
-                    );
                     return (
                         <>
                             {$item.contents.indexOf($filter) > -1 ? (
                                 // one fix would be to add $item.contents.indexOf($filter) > -1
                                 // to watch itself so if it changes this rerenders
                                 // but not if it doesn't change
-                                item
+                                <li>
+                                    <input
+                                        type="checkbox"
+                                        checked={$item.checked}
+                                        oninput={e =>
+                                            ($item.checked = (e.currentTarget as any).checked)
+                                        }
+                                    />{" "}
+                                    <input
+                                        type="text"
+                                        value={$item.contents}
+                                        nodecreated={node =>
+                                            setTimeout(
+                                                () =>
+                                                    !$item.contents
+                                                        ? node.focus()
+                                                        : 0,
+                                                0
+                                            )
+                                        }
+                                        oninput={e =>
+                                            ($item.contents = (e.currentTarget as any).value)
+                                        }
+                                        onkeypress={e => {
+                                            if (e.code === "Enter") {
+                                                $list.insert(
+                                                    { after: symbol },
+                                                    {
+                                                        checked: false,
+                                                        contents: ""
+                                                    }
+                                                );
+                                            }
+                                        }}
+                                    />
+                                    {$showRemoveConfirm ? (
+                                        <>
+                                            Are you sure?{" "}
+                                            <button
+                                                onclick={() =>
+                                                    $list.remove(symbol)
+                                                }
+                                            >
+                                                Remove
+                                            </button>
+                                            <button
+                                                onclick={() =>
+                                                    ($showRemoveConfirm = false)
+                                                }
+                                            >
+                                                Cancel
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onclick={() =>
+                                                ($showRemoveConfirm = true)
+                                            }
+                                        >
+                                            x
+                                        </button>
+                                    )}
+                                </li>
                             ) : (
                                 <li>does not match filter</li>
                             )}
