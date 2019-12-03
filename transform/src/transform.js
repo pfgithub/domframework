@@ -179,9 +179,8 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 if (path.node.value.value.startsWith("dmf prefix ")) {
-                    let file = path.findParent(path => !!path.node.directives)
-                        .node;
-                    file.__dmf_prefix = path.node.value.value.substr(11);
+                    let block = path.parent;
+                    block.__dmf_prefix = path.node.value.value.substr(11);
                     path.remove();
                 }
             },

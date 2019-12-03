@@ -2,7 +2,7 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": { "*": ["types/*"] },
-        "outDir": "./built",
+        "outDir": "./dist",
         "target": "es2017",
         "module": "commonjs",
         "noImplicitAny": true,
@@ -12,5 +12,5 @@
         "strict": true,
         "jsx": "preserve"
     },
-    "include": ["src/**/*", "bin/**/*", "test/**/*", "index.ts"]
+    "include": ["src/**/*"]
 }

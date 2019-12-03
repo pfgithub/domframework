@@ -4,7 +4,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const ProgressBarPlugin = require("progress-bar-webpack-plugin");
 
 module.exports = {
-    entry: "./demo/TodoList.tsx",
+    entry: "./src/TodoList.tsx",
     devtool: "inline-source-map",
     mode: "development",
     module: {
@@ -20,7 +20,7 @@ module.exports = {
                         "@babel/plugin-syntax-dynamic-import",
                         "@babel/plugin-proposal-class-properties",
                         "@babel/plugin-transform-react-jsx",
-                        "./src/babel/transform.js"
+                        "transform-dmf"
                     ]
                 }
             }

@@ -99,7 +99,7 @@ export class FakeWatchable extends WatchableBase<void> {
     get $ref() {
         return this.thing;
     }
-    set $ref(nv: any) {
+    set $ref(_nv: any) {
         throw new Error("Cannot set ref value of fakewatchable");
     }
     $get(v: string) {
@@ -219,7 +219,7 @@ type AddCB<T> = (
     item: WatchableThing<T>,
     o: { before?: symbol; symbol: symbol; after?: symbol }
 ) => void;
-type RemoveCB<T> = (o: {
+type RemoveCB = (o: {
     before?: symbol;
     symbol: symbol;
     after?: symbol;
@@ -235,7 +235,7 @@ export class List<T> {
     private __last?: symbol;
     private __length: WatchableThing<any>;
     private __onAdd: AddCB<T>[];
-    private __onRemove: RemoveCB<T>[];
+    private __onRemove: RemoveCB[];
     constructor(items: T[]) {
         this.__items = {};
         this.__onAdd = [];
@@ -247,7 +247,7 @@ export class List<T> {
         this.__onAdd.push(cb);
         return () => (this.__onAdd = this.__onAdd.filter(v => v !== cb));
     }
-    onRemove(cb: RemoveCB<T>) {
+    onRemove(cb: RemoveCB) {
         this.__onRemove.push(cb);
         return () => (this.__onRemove = this.__onRemove.filter(v => v !== cb));
     }
@@ -339,18 +339,12 @@ export class List<T> {
         }
         return;
     }
-    displayEach(cb: (item: T) => void) {
-        // return <Fragment></Fragment>
-        // maybe not, that'd be a circular import
-        // call cb onitemadd
-        // remove item onremove
-    }
     array() {
         let resarr: T[] = [];
         this.forEach(item => resarr.push(item));
         return resarr;
     }
-    updateDiff(nv: T[]) {
+    updateDiff(_nv: T[]) {
         // setHelperSymbol = Symbol("set helper")
         // on each item, set a sethelpersymbol
         // use this to store values in a {} and diff
@@ -385,7 +379,7 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
     get $ref(): any {
         throw new Error("Method not implemented.");
     }
-    set $ref(v: any) {
+    set $ref(_v: any) {
         throw new Error("Method not implemented.");
     }
     private [watchable_cb]: (prev: { ref: any }, skip: () => boolean) => T;

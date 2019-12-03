@@ -1,20 +1,10 @@
-console.log("It works!");
-
-import "./debug/drawBoxAroundElement";
+console.log("dmf loaded");
 
 import {
     watchable_watch,
     watchable_value,
-    WatchableBase,
-    watchable_cb,
-    watchable_data,
-    watchable_cleanupfns,
-    watchable_setup,
-    watchable_emit,
-    watchable_cleanup,
     Watchable,
     List,
-    WatchableThing,
     symbolKey
 } from "./watchable";
 

@@ -1,0 +1,31 @@
+{
+    "name": "babel-plugin-transform-dmf",
+    "version": "1.0.1",
+    "description": "Babel transform to transform dmf",
+    "keywords": [
+        "babel-plugin"
+    ],
+    "license": "MIT",
+    "author": "pfg <omegariisthebest@gmail.com>",
+    "files": [
+        "index.js"
+    ],
+    "main": "dist/transform.js",
+    "repository": "https://github.com/pfgithub/domframework",
+    "scripts": {
+        "build": "rm -rf dist && cp -r src dist",
+        "prepublishOnly": "yarn build",
+        "test": "yarn build && tap --coverage-report=html --no-browser --100 test/test.js"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "babel-core": "^6.26.3",
+        "glob": "^7.1.4",
+        "tap": "^14.5.0",
+        "prettier": "^1.19.1"
+    },
+    "files": [
+        "dist/**/*",
+        "LICENSE"
+    ]
+}

@@ -1,7 +1,7 @@
 "dmf prefix $";
 
-import { React, ListRender } from "../src/dom";
-import { $, $bind, List } from "../src/watchable";
+import { React, ListRender, $, $bind, List } from "dmf";
+import "./drawBoxAroundElement";
 
 $;
 React;

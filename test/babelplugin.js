@@ -1,1 +1,0 @@
-// https://github.com/babel-utils/babel-plugin-tester
