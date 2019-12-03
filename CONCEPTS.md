@@ -14,3 +14,14 @@ button::create{
 ```
 
 on create, button will have a .create.fjknfdsalnkdf class for the length of the transition. after that it will be removed
+
+typescript types
+
+what if watchables have a special type, T & {____watchable}
+
+```
+let $playing = false; 
+$playing || $onchange(() => {
+	// called when $playing changes
+})
+```
