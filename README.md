@@ -1,4 +1,6 @@
-Truly reactive dom updates with no virtual dom and no diffing. (like svelte but different)
+readme wip
+
+Truly reactive dom updates with no virtual dom and no diffing and typescript support.
 
 # Demo
 
@@ -52,13 +54,15 @@ domframework emphasizes performance. renders only happen when a component is cre
 -   ( every other framework can too, this isn't really very special)
 
 ```
-domframework
+"dmf prefix $"
 
 let $data = {a: 1, b: 2}; // $ denotes watchable.
 
+// this won't work vv because $data is a number and .value is a string
+
 document.body.appendChild((
 <div>
-	<input type="number" value={$data} />
+	<input type="number" value={$data} oninput={e => $data = e.currentTarget.value} />
 	<p>{$data.a} {$data.b}, {$data.a + $data.b}</p>
 </div>
 ).node);
@@ -74,12 +78,12 @@ import React, { useState } from 'react';
 export default () => {
   const [a, setA] = useState(1);
   const [b, setB] = useState(2);
+  // this won't work vv because $data is a number and a,b is a string
 
   return (
     <div>
       <input type="number" value={a} onChange={e => setA(e.currentTarget.value)}/>
       <input type="number" value={b} onChange={e => setB(e.currentTarget.value)}/>
-      {null/* this isn't quite correct because it doesn't handle cases when the number field contains strings */}
       <p>{a} + {b} = {a + b}</p>
     </div>
   );
