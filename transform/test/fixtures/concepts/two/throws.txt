@@ -1,0 +1,3 @@
+you can't assign a watchable variable to a watchable variable.
+if you want to make a copy, use $a = $b instead.
+wait...

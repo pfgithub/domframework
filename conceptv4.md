@@ -78,3 +78,51 @@ O(nlogn) sorting
 O(  n  ) filtering
 O(  n  ) adding, modifying, removing an item
 
+
+```
+
+function Component(props: {$value: v}){
+    props.$value // if the prefixed identifier is the property of a non-prefixed thing, it should count as prefixed after the non-prefixed thing
+    // (intended to prevent the annoying typescript thing where {$a, $b, $c}: {$a: type, $b: type, $c: type})
+    let $a = $b;
+    // WANTED:
+    let $a = $b
+    // CURRENT:
+    let $a = $.createWatchable($b.$ref)
+    // 2:
+    $a = $b
+    // WANTED:
+    error! bad
+    // CURRENT:
+    $a.$ref = $b.$ref
+}
+
+```
+
+
+```tsx
+
+// items should have to be watchable at every step ::
+
+let $o = {$c: "test", $d: "test"};
+
+$o.$c.toString() // $o.get("$c").ref.toString()
+$o.$d // $o.get("$d").ref
+
+```
+
+```tsx
+
+// real fragments should be possible
+// nodes should return              
+let q: () => { nodes: Node[], insertAfter: (node: ChildNode) => void }
+// the mounter should call back to the node
+// with the node after
+// (this will use lots of blank text nodes but those can)
+// (          be optimized later                        )
+
+// / / // / / // / / // / / // / / //
+
+```
+
+
