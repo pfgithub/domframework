@@ -111,7 +111,7 @@ $o.$d // $o.get("$d").ref
 
 ```
 
-```tsx
+```ts
 
 // real fragments should be possible
 // nodes should return              
@@ -127,7 +127,7 @@ type UserNodeSpec =
   | primitive
   | ExistingNodeSpec
 
-type ExistingNodeSpec = {nodes: Node[], insertBefore: (node: ChildNode) => void, removeSelf: () => void};
+type ExistingNodeSpec = {nodes: Node[], insertBefore: (parentNode: ChildNode, node: ChildNode) => void, removeSelf: () => void};
 type NodeSpec = ExistingNodeSpec | Watchable<NodeSpec>;
 
 // <div>
@@ -150,11 +150,16 @@ export let React = {
         let onch = (newtext: primitive) => {
             node.nodeValue = "" + newtext;
         }
+        let removalHandlers: (() => void)[] = [];
         if(text.watchable){
-            onch ...
+            removalHandlers.push(text.watch((nv) => {
+                onch(nv);
+            }));
+            onch(text.getCurrent());
         }else{
-            onch ...
+            onch(text);
         }
+        return {nodes: [node], insertBefore: (parent, before) => {parent.insertBefore(node, before);}, removeSelf: () => void}
     },
     createElement(name: string, props: {}, ...children: (UserNodeSpec[]) | Watch<UserNodeSpec[])[]>){
         let parentNode = document.createElement(name);
