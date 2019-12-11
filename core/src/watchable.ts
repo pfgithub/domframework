@@ -345,26 +345,26 @@ export class List<T> {
     }
 }
 
+type WDLCallback<T> = (
+    previousData: { ref: any },
+    previousValue: { ref: T | undefined },
+) => T;
 export class WatchableDependencyList<T> extends WatchableBase {
     private dependencyList: WatchableBase[];
-    private requiresUpdate: () => boolean;
-    private getValue: () => T;
+    private getValue: WDLCallback<T>;
+    private previousData: { ref: any } = { ref: {} };
     private removalHandlers: RemovalHandler[] = [];
-    constructor(
-        dependencyList: WatchableBase[],
-        requiresUpdate: () => boolean,
-        getValue: () => T,
-    ) {
+    private savedReturnValue: { ref: T | undefined } = { ref: undefined };
+    constructor(dependencyList: WatchableBase[], getValue: WDLCallback<T>) {
         super();
         this.dependencyList = dependencyList;
-        this.requiresUpdate = requiresUpdate;
         this.getValue = getValue;
     }
     _setup() {
         this.dependencyList.forEach(item =>
             this.removalHandlers.push(
                 item.watch(() => {
-                    if (this.requiresUpdate()) this.emit();
+                    this.emit();
                 }),
             ),
         );
@@ -373,7 +373,9 @@ export class WatchableDependencyList<T> extends WatchableBase {
         this.removalHandlers.forEach(rh => rh());
     }
     get $ref(): T {
-        return this.getValue();
+        let value = this.getValue(this.previousData, this.savedReturnValue);
+        this.savedReturnValue = { ref: value };
+        return value; // dom will check strict equality so if a new node is created it will know there is nothing to do
     }
     set $ref(v: T) {
         throw new Error("Cannot set value of watchable dependency list.");
@@ -384,6 +386,9 @@ export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
     list<T>(items: T[]): List<T> {
         return new List(items);
+    },
+    watch<T>(dependencyList: WatchableBase[], getValue: WDLCallback<T>) {
+        return new WatchableDependencyList(dependencyList, getValue);
     },
 };
 

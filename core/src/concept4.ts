@@ -60,6 +60,7 @@ export let React = {
     TextNode(text: primitive | Watch<primitive>) {
         let node = document.createTextNode("");
         let onch = (newtext: primitive) => {
+            // check if text is the same as before. if so, do nothing.
             node.nodeValue = "" + newtext;
         };
         let removalHandlers: (() => void)[] = [];
@@ -106,6 +107,7 @@ export let React = {
 
             let existingV;
             let onch = (nv: UserNodeSpec) => {
+                // check if nv is the same as before. if so, do nothing.s
                 // this happens for example if {a ? <></> : <div></div>} changes
                 // clear existing
                 existingV && existingV.removeSelf();
