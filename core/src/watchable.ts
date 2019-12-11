@@ -26,7 +26,7 @@ function nextTick(cb: () => void) {
     if (!nextTickInfo) {
         nextTickInfo = {
             symbol: Symbol("next tick"),
-            handlers: []
+            handlers: [],
         };
         setTimeout(() => _handleNextTick(), 0);
     }
@@ -125,7 +125,7 @@ export class WatchableThing<T> extends WatchableBase {
         if (typeof this.__v === "object" && typeof nv === "object") {
             // if is array, good luck...
             let existingKeys: { [key: string]: WatchableThing<any> } = {
-                ...this.__v
+                ...this.__v,
             };
             Object.keys(nv).forEach(key => {
                 let value = nv[key];
@@ -203,7 +203,7 @@ export let symbolKey = (v: symbol): string => (v as unknown) as string;
 
 type AddCB<T> = (
     item: WatchableThing<T>,
-    o: { before?: symbol; symbol: symbol; after?: symbol }
+    o: { before?: symbol; symbol: symbol; after?: symbol },
 ) => void;
 type RemoveCB = (o: {
     before?: symbol;
@@ -236,7 +236,7 @@ export class List<T> {
     }
     insert(
         o: { after: symbol | undefined } | { before: symbol | undefined },
-        item: T
+        item: T,
     ) {
         let thisItemSymbol = Symbol("new item");
         let watchableItem = $.createWatchable(item);
@@ -261,7 +261,7 @@ export class List<T> {
             next: afterItemSymbol,
             self: watchableItem,
             symbol: thisItemSymbol,
-            removeSelf: () => {}
+            removeSelf: () => {},
         };
 
         if (beforeItem) {
@@ -284,9 +284,9 @@ export class List<T> {
                 oa(watchableItem, {
                     before: beforeItemSymbol,
                     after: afterItemSymbol,
-                    symbol: thisItemSymbol
-                })
-            )
+                    symbol: thisItemSymbol,
+                }),
+            ),
         );
         // next tick, emit add event
     }
@@ -308,9 +308,9 @@ export class List<T> {
                 or({
                     before: item.prev,
                     after: item.next,
-                    symbol: item.symbol
-                })
-            )
+                    symbol: item.symbol,
+                }),
+            ),
         );
     }
     forEach(cb: (item: T, symbol: symbol) => void) {
@@ -353,7 +353,7 @@ export class WatchableDependencyList<T> extends WatchableBase {
     constructor(
         dependencyList: WatchableBase[],
         requiresUpdate: () => boolean,
-        getValue: () => T
+        getValue: () => T,
     ) {
         super();
         this.dependencyList = dependencyList;
@@ -365,8 +365,8 @@ export class WatchableDependencyList<T> extends WatchableBase {
             this.removalHandlers.push(
                 item.watch(() => {
                     if (this.requiresUpdate()) this.emit();
-                })
-            )
+                }),
+            ),
         );
     }
     _teardown() {
@@ -384,7 +384,7 @@ export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
     list<T>(items: T[]): List<T> {
         return new List(items);
-    }
+    },
 };
 
 // export interface Watchable {

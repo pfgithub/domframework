@@ -29,7 +29,7 @@ const COLORS = [
     "#cfb965",
     "#dfba57",
     "#efbb49",
-    "#febc38"
+    "#febc38",
 ];
 let canvas = null;
 
@@ -119,7 +119,7 @@ function prepareToDraw() {
         } else {
             earliestExpiration = Math.min(
                 earliestExpiration,
-                data.expirationTime
+                data.expirationTime,
             );
         }
     });
@@ -152,11 +152,11 @@ function traceUpdates(nodes) {
                 data != null
                     ? Math.min(
                           now + MAX_DISPLAY_DURATION,
-                          data.expirationTime + DISPLAY_DURATION
+                          data.expirationTime + DISPLAY_DURATION,
                       )
                     : now + DISPLAY_DURATION,
             lastMeasuredAt,
-            rect
+            rect,
         });
     });
 
@@ -205,8 +205,8 @@ function getBoundingClientRectWithBorderOffset(node) {
             // is not the first rect in the array), but we set them so that this
             // object typechecks as a ClientRect.
             width: 0,
-            height: 0
-        }
+            height: 0,
+        },
     ]);
 } // Add together the top, left, bottom, and right properties of
 // each ClientRect, but keep the width and height of the first one.
@@ -223,7 +223,7 @@ function mergeRectOffsets(rects) {
             width: previousRect.width,
             height: previousRect.height,
             bottom: previousRect.bottom + rect.bottom,
-            right: previousRect.right + rect.right
+            right: previousRect.right + rect.right,
         };
     });
 } // Calculate a boundingClientRect for a node relative to boundaryWindow,
@@ -276,7 +276,7 @@ function getElementDimensions(domElement) {
         paddingLeft: parseInt(calculatedStyle.paddingLeft, 10),
         paddingRight: parseInt(calculatedStyle.paddingRight, 10),
         paddingTop: parseInt(calculatedStyle.paddingTop, 10),
-        paddingBottom: parseInt(calculatedStyle.paddingBottom, 10)
+        paddingBottom: parseInt(calculatedStyle.paddingBottom, 10),
     };
 }
 
@@ -297,8 +297,8 @@ window.startHighlightUpdates = () => {
         nextTickTimeout = setTimeout(() => {
             drawBoxAroundElement(
                 ...nodesUpdatedThisTick.map(node =>
-                    node instanceof Text ? node.parentElement : node
-                )
+                    node instanceof Text ? node.parentElement : node,
+                ),
             );
             nodesUpdatedThisTick = [];
         }, 0);

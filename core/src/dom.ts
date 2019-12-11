@@ -5,7 +5,7 @@ import {
     watchable_value,
     Watchable,
     List,
-    symbolKey
+    symbolKey,
 } from "./watchable";
 
 declare global {
@@ -37,7 +37,7 @@ export function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
 
 export function createComponent(
     c: ComponentModel,
-    insert: (node: Node) => void
+    insert: (node: Node) => void,
 ): { finalNode: Node; removeSelf: () => void } {
     if (typeof c !== "object") {
         let textNode = document.createTextNode("" + c);
@@ -61,7 +61,7 @@ export function createComponent(
             removalFunctions = [];
             // create new nodes
             let { removeSelf } = createComponent(model, node =>
-                finalNode.parentNode!.insertBefore(node, finalNode)
+                finalNode.parentNode!.insertBefore(node, finalNode),
             );
             removalFunctions.push(removeSelf);
         };
@@ -75,7 +75,7 @@ export function createComponent(
                 unwatch();
                 finalNode.remove();
                 removalFunctions.map(rf => rf());
-            }
+            },
         };
     }
     insert(c.node);
@@ -85,7 +85,7 @@ export function createComponent(
         removeSelf: () => {
             c.node.remove();
             c.removeSelf();
-        }
+        },
     };
 }
 
@@ -120,7 +120,7 @@ export const d = (
                             (element as any)[prop] = v;
                         // notify prop update
                         window.onNodeUpdate(element);
-                    })
+                    }),
                 );
                 let current = a[watchable_value]();
                 (element as any)[prop] = current;
@@ -131,14 +131,15 @@ export const d = (
     if (children)
         children.map(c => {
             removalHandlers.push(
-                createComponent(c, node => element.appendChild(node)).removeSelf
+                createComponent(c, node => element.appendChild(node))
+                    .removeSelf,
             );
         });
     window.onNodeUpdate(element);
     if (nodeCreationHandler) nodeCreationHandler(element); // maybe nodecreationhandler should return removal functions
     return {
         node: element,
-        removeSelf: () => removalHandlers.forEach(h => h())
+        removeSelf: () => removalHandlers.forEach(h => h()),
     };
     // children:map child addChild(...)
     // props:map prop // find watch() functions (these can change props based on values changing)
@@ -153,17 +154,17 @@ export let React = {
             "div",
             {
                 className: "divspam",
-                nodecreated: node => (node.style.display = "contents")
+                nodecreated: node => (node.style.display = "contents"),
             },
-            ...(props.children || [""])
+            ...(props.children || [""]),
         );
-    }
+    },
 };
 
 // type RealOrWatchable<T> = T | Watchable<T>;
 
 export function textNode(
-    v: string | Watchable<string>
+    v: string | Watchable<string>,
 ): ExistingComponentModel {
     let textValue = isWatchable(v) ? v[watchable_value]() : v;
     let node = document.createTextNode(textValue);
@@ -173,7 +174,7 @@ export function textNode(
             v[watchable_watch](nv => {
                 if (node.nodeValue !== nv) node.nodeValue = nv;
                 window.onNodeUpdate(node);
-            })
+            }),
         );
     }
     return {
@@ -181,7 +182,7 @@ export function textNode(
         removeSelf: () => {
             console.log("removing", removalHandlers);
             removalHandlers.map(h => h());
-        }
+        },
     };
 }
 
@@ -207,7 +208,7 @@ declare global {
 
 export function ListRender<T>(
     list: List<T>,
-    cb: (item: T, symbol: symbol) => JSX.Element
+    cb: (item: T, symbol: symbol) => JSX.Element,
 ) {
     let baseNode = d("div", {});
     let symbolToNodeAfterMap: { [key: string]: ChildNode } = {};
@@ -225,23 +226,23 @@ export function ListRender<T>(
             let resultElement = cb((item as unknown) as T, symbol);
             console.log(
                 "Found node. Going to insert before",
-                symbolToNodeAfterMap[symbolKey(after!)]
+                symbolToNodeAfterMap[symbolKey(after!)],
             );
             if (!after || !symbolToNodeAfterMap[symbolKey(after)])
                 baseNode.node.appendChild(resultElement.node);
             else
                 baseNode.node.insertBefore(
                     resultElement.node,
-                    symbolToNodeAfterMap[symbolKey(after)]
+                    symbolToNodeAfterMap[symbolKey(after)],
                 );
             symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
-        })
+        }),
     );
     removalHandlers.push(
         list.onRemove(({ before, symbol, after }) => {
             let element = symbolToNodeAfterMap[symbolKey(symbol!)];
             element.remove();
-        })
+        }),
     );
     let existingRemove = baseNode.removeSelf;
     baseNode.removeSelf = () => {

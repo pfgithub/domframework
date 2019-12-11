@@ -45,7 +45,7 @@ document.body.appendChild(
                 </div>
             ))}
         </div>
-    ).node
+    ).node,
 );
 
 function NumberThing($q: number) {
@@ -74,7 +74,7 @@ document.body.appendChild(
             <button onclick={() => ($obj = undefined)}>set undefined</button>
             <button onclick={() => ($obj = { a: 5, b: 6 })}>set 5, 6</button>
         </div>
-    ).node
+    ).node,
 );
 
 type NestedT =
@@ -108,7 +108,7 @@ function NestedTest($o: NestedT) {
                                 a: undefined,
                                 b: undefined,
                                 text: "",
-                                counter: 0
+                                counter: 0,
                             })
                         }
                     >
@@ -155,7 +155,7 @@ document.body.appendChild(
                 <div></div>
             )}
         </div>
-    ).node
+    ).node,
 );
 
 function TodoList($list: List<string>) {

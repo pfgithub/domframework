@@ -32,7 +32,7 @@ return ____curr._1 ? <></> : <></>
 */
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+    value: true,
 });
 module.exports.default = function({ types: t }) {
     let $call = v =>
@@ -46,14 +46,14 @@ module.exports.default = function({ types: t }) {
                 exit(path) {
                     if (
                         path.findParent(
-                            path => path.node.__is_supposed_to_skip
+                            path => path.node.__is_supposed_to_skip,
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
                         return;
                     }
                     let prefixNode = path.findParent(
-                        path => path.node.__dmf_prefix
+                        path => path.node.__dmf_prefix,
                     );
                     if (!prefixNode) return;
                     let prefix = prefixNode.node.__dmf_prefix;
@@ -67,20 +67,20 @@ module.exports.default = function({ types: t }) {
                         path.skip();
                         path.node.__is_supposed_to_skip = true;
                     }
-                }
+                },
             },
             MemberExpression: {
                 enter(path) {
                     if (
                         path.findParent(
-                            path => path.node.__is_supposed_to_skip
+                            path => path.node.__is_supposed_to_skip,
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
                         return;
                     }
                     let prefixNode = path.findParent(
-                        path => path.node.__dmf_prefix
+                        path => path.node.__dmf_prefix,
                     );
                     if (!prefixNode) return;
                     let prefix = prefixNode.node.__dmf_prefix;
@@ -95,14 +95,14 @@ module.exports.default = function({ types: t }) {
                 exit(path) {
                     if (
                         path.findParent(
-                            path => path.node.__is_supposed_to_skip
+                            path => path.node.__is_supposed_to_skip,
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
                         return;
                     }
                     let prefixNode = path.findParent(
-                        path => path.node.__dmf_prefix
+                        path => path.node.__dmf_prefix,
                     );
                     if (!prefixNode) return;
                     let prefix = prefixNode.node.__dmf_prefix;
@@ -142,17 +142,17 @@ module.exports.default = function({ types: t }) {
                                         // maybe  we can tell it to not check this?
                                         t.memberExpression(
                                             path.node.object,
-                                            t.identifier("$get")
+                                            t.identifier("$get"),
                                         ),
-                                        [t.stringLiteral(property.name)]
-                                    )
-                                )
+                                        [t.stringLiteral(property.name)],
+                                    ),
+                                ),
                             );
                             path.skip();
                             path.node.__is_supposed_to_skip = true;
                         }
                     }
-                }
+                },
             },
             ImportSpecifier(path) {
                 path.skip();
@@ -165,7 +165,7 @@ module.exports.default = function({ types: t }) {
                     path.node.right.name === "$bind"
                 ) {
                     path.replaceWith(
-                        t.memberExpression(path.node.left, path.node.right)
+                        t.memberExpression(path.node.left, path.node.right),
                     );
                     return;
                 }
@@ -192,7 +192,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -214,7 +214,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -236,7 +236,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -247,7 +247,7 @@ module.exports.default = function({ types: t }) {
                 ) {
                     path.node.left.__do_not_ref = true;
                     path.node.right = t.callExpression($call`createWatchable`, [
-                        path.node.right
+                        path.node.right,
                     ]);
                 }
             },
@@ -259,7 +259,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -281,7 +281,7 @@ module.exports.default = function({ types: t }) {
                     if (canCreateWatchable)
                         path.node.value = t.callExpression(
                             $call`createWatchable`,
-                            [path.node.value]
+                            [path.node.value],
                         );
                 }
             },
@@ -293,7 +293,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -307,7 +307,7 @@ module.exports.default = function({ types: t }) {
                         path.node.init = t.identifier("undefined");
                     }
                     path.node.init = t.callExpression($call`createWatchable`, [
-                        path.node.init
+                        path.node.init,
                     ]);
                 }
             },
@@ -319,7 +319,7 @@ module.exports.default = function({ types: t }) {
                     return;
                 }
                 let prefixNode = path.findParent(
-                    path => path.node.__dmf_prefix
+                    path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
                 let prefix = prefixNode.node.__dmf_prefix;
@@ -336,14 +336,14 @@ module.exports.default = function({ types: t }) {
                 exit(path) {
                     if (
                         path.findParent(
-                            path => path.node.__is_supposed_to_skip
+                            path => path.node.__is_supposed_to_skip,
                         ) ||
                         path.node.__is_supposed_to_skip
                     ) {
                         return;
                     }
                     let prefixNode = path.findParent(
-                        path => path.node.__dmf_prefix
+                        path => path.node.__dmf_prefix,
                     );
                     if (!prefixNode) return;
                     let prefix = prefixNode.node.__dmf_prefix;
@@ -372,10 +372,10 @@ module.exports.default = function({ types: t }) {
                                 let newL = tests.push(path.node.test);
                                 path.node.test = t.memberExpression(
                                     t.identifier("____curr"),
-                                    t.identifier("_" + (newL - 1))
+                                    t.identifier("_" + (newL - 1)),
                                 );
-                            }
-                        }
+                            },
+                        },
                     });
 
                     if (watchables.length <= 0) {
@@ -387,7 +387,7 @@ module.exports.default = function({ types: t }) {
                         t.arrowFunctionExpression(
                             [
                                 t.identifier("____prev"),
-                                t.identifier("____skip")
+                                t.identifier("____skip"),
                             ],
                             t.blockStatement([
                                 t.variableDeclaration("const", [
@@ -397,11 +397,11 @@ module.exports.default = function({ types: t }) {
                                             tests.map((test, index) =>
                                                 t.objectProperty(
                                                     t.identifier("_" + index),
-                                                    test
-                                                )
-                                            )
-                                        )
-                                    )
+                                                    test,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
                                 ]),
                                 ...tests.map((test, index) =>
                                     t.ifStatement(
@@ -409,47 +409,47 @@ module.exports.default = function({ types: t }) {
                                             "===",
                                             t.memberExpression(
                                                 t.identifier("____curr"),
-                                                t.identifier("_" + index)
+                                                t.identifier("_" + index),
                                             ),
                                             t.memberExpression(
                                                 t.memberExpression(
                                                     t.identifier("____prev"),
-                                                    t.identifier("ref")
+                                                    t.identifier("ref"),
                                                 ),
-                                                t.identifier("_" + index)
-                                            )
+                                                t.identifier("_" + index),
+                                            ),
                                         ),
                                         t.blockStatement([
                                             t.ifStatement(
                                                 t.callExpression(
                                                     t.identifier("____skip"),
-                                                    []
+                                                    [],
                                                 ),
                                                 t.blockStatement([
-                                                    t.returnStatement()
-                                                ])
-                                            )
-                                        ])
-                                    )
+                                                    t.returnStatement(),
+                                                ]),
+                                            ),
+                                        ]),
+                                    ),
                                 ),
                                 t.expressionStatement(
                                     t.assignmentExpression(
                                         "=",
                                         t.memberExpression(
                                             t.identifier("____prev"),
-                                            t.identifier("ref")
+                                            t.identifier("ref"),
                                         ),
-                                        t.identifier("____curr")
-                                    )
+                                        t.identifier("____curr"),
+                                    ),
                                 ),
-                                t.returnStatement(path.node.expression)
-                            ])
-                        )
+                                t.returnStatement(path.node.expression),
+                            ]),
+                        ),
                     ]);
                     path.skip();
                     path.node.expression.__is_supposed_to_skip = true;
-                }
-            }
-        }
+                },
+            },
+        },
     };
 };

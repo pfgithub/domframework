@@ -1,4 +1,4 @@
-import {Watchable} from "./watchable"
+import { Watchable } from "./watchable";
 
 let is_watch = Symbol("is_watch");
 
@@ -54,7 +54,7 @@ export let React = {
     Fragment(props, ...children) {
         let nodeAfter = document.createTextNode("");
         return {
-            insertBefore(node: ChildNode) {}
+            insertBefore(node: ChildNode) {},
         };
     },
     TextNode(text: primitive | Watch<primitive>) {
@@ -67,7 +67,7 @@ export let React = {
             removalHandlers.push(
                 text.watch(nv => {
                     onch(nv);
-                })
+                }),
             );
             onch(text.getCurrent());
         } else {
@@ -78,7 +78,7 @@ export let React = {
             insertBefore: (parent, before) => {
                 parent.insertBefore(node, before);
             },
-            removeSelf: () => removalHandlers.forEach(handler => handler())
+            removeSelf: () => removalHandlers.forEach(handler => handler()),
         };
     },
     createElement(
@@ -128,7 +128,7 @@ export let React = {
             },
             removeSelf() {
                 finalNode.remove();
-            }
+            },
         };
-    }
+    },
 };

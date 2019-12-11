@@ -34,15 +34,15 @@ function TodoList($list: List<TodoItem>) {
                             if (e.code === "Enter") {
                                 $list.unshift({
                                     checked: false,
-                                    contents: $wipItem
+                                    contents: $wipItem,
                                 });
                                 $wipItem = "";
                             }
-                        }
+                        },
                     })}
                     {ManagedTextInput($filter || $bind, {
                         type: "text",
-                        placeholder: "Filter..."
+                        placeholder: "Filter...",
                     })}
                 </li>
                 {ListRender($list, ($item, symbol) => {
@@ -68,7 +68,7 @@ function TodoList($list: List<TodoItem>) {
                                                         ? (node.focus(),
                                                           (thisShouldFocus = false))
                                                         : 0,
-                                                0
+                                                0,
                                             )
                                         }
                                         oninput={e =>
@@ -81,8 +81,8 @@ function TodoList($list: List<TodoItem>) {
                                                     { after: symbol },
                                                     {
                                                         checked: false,
-                                                        contents: ""
-                                                    }
+                                                        contents: "",
+                                                    },
                                                 );
                                             }
                                         }}
@@ -155,10 +155,10 @@ document.body.appendChild(
                 </div>
             </>
         );
-    }).node
+    }).node,
 );
 document.body.appendChild(
-    (<button onclick={() => $listOfTodoLists.push(0)}>+</button>).node
+    (<button onclick={() => $listOfTodoLists.push(0)}>+</button>).node,
 );
 
 export function HighlightUpdatesButton() {
