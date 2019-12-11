@@ -1,9 +1,11 @@
+import {Watchable} from "./watchable"
+
 let is_watch = Symbol("is_watch");
 
 class Watch<T> {
     _cb: () => T;
     _afterch: (() => void)[] = [];
-    constructor(watchlist: Watchable[], cb: () => T) {
+    constructor(watchlist: Watchable<void>[], cb: () => T) {
         this._cb = cb;
     }
     // watch(handler) -> removeHandler()
