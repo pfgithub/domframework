@@ -36,59 +36,48 @@ function nextTick(cb: () => void) {
     nextTickInfo.handlers.push(cb);
 }
 
-export const watchable_cb = Symbol("cb");
-export const watchable_ref = Symbol("ref");
-export const watchable_data = Symbol("data");
-export const watchable_emit = Symbol("emit");
-export const watchable_value = Symbol("value");
-export const watchable_setup = Symbol("setup");
-export const watchable_watch = Symbol("watch");
-export const watchable_cleanup = Symbol("cleanup");
-export const watchable_watchers = Symbol("watchers");
-export const watchable_cleanupfns = Symbol("cleanupfns");
+export const is_watchable = Symbol("is watchable");
 
 export const should_be_raw = Symbol("should be raw");
 
-export abstract class WatchableBase<T> {
-    [watchable_watchers]: ((v: T) => void)[] = [];
+export type RemovalHandler = (() => void) & { __isRemovalHandler: true };
+
+export interface WatchableBase {
+    _setup?(): void;
+    _teardown?(): void;
+}
+export abstract class WatchableBase {
+    watchers: (() => void)[] = [];
     abstract get $ref(): any;
     abstract set $ref(v: any);
-    [watchable_watch](watcher: (v: T) => void): () => void {
-        if (this[watchable_watchers].length === 0) {
-            this[watchable_setup]();
+    watch(watcher: () => void): RemovalHandler {
+        if (this.watchers.length === 0) {
+            // setup
+            this._setup && this._setup();
         }
-        this[watchable_watchers].push(watcher);
-        return () => {
-            this[watchable_watchers] = this[watchable_watchers].filter(
-                e => e !== watcher
-            );
-            if (this[watchable_watchers].length === 0) {
-                this[watchable_cleanup]();
+        this.watchers.push(watcher);
+        return (() => {
+            this.watchers = this.watchers.filter(e => e !== watcher);
+            if (this.watchers.length === 0) {
+                // cleanup
+                this._teardown && this._teardown();
             }
-        };
+        }) as RemovalHandler;
     }
-    [watchable_emit](value: T) {
-        // next tick:
-        nextTick(() =>
-            this[watchable_watchers].map(w => {
-                w(value);
-            })
-        );
+    emit() {
+        nextTick(() => this.watchers.forEach(w => w()));
     }
-    abstract [watchable_value](): T;
-    abstract [watchable_setup](): void;
-    abstract [watchable_cleanup](): void;
+    get [is_watchable]() {
+        return true;
+    }
 }
 
 // !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
 
-export class FakeWatchable extends WatchableBase<void> {
-    [watchable_value](): void {}
-    [watchable_setup](): void {}
-    [watchable_cleanup](): void {}
+export class FakeWatchable extends WatchableBase {
     thing: any;
-    parent: WatchableBase<any>;
-    constructor(thing: any, parent: WatchableBase<void>) {
+    parent: WatchableBase;
+    constructor(thing: any, parent: WatchableBase) {
         super();
         if (typeof thing === "function") {
             thing = thing.bind(parent.$ref);
@@ -105,12 +94,12 @@ export class FakeWatchable extends WatchableBase<void> {
     $get(v: string) {
         return new FakeWatchable(this.thing[v], this);
     }
-    [watchable_watch](watcher: (v: any) => void) {
-        return this.parent[watchable_watch](watcher);
+    watch(watcher: () => void) {
+        return this.parent.watch(watcher);
     }
 }
 
-export class WatchableThing<T> extends WatchableBase<void> {
+export class WatchableThing<T> extends WatchableBase {
     private __v!: any;
     isUnused: boolean;
     constructor(v: T, isUnused = false) {
@@ -121,13 +110,10 @@ export class WatchableThing<T> extends WatchableBase<void> {
         //   watch[v] and add to watchable_cleanup
         // }
     }
-    [watchable_value](): void {}
-    [watchable_setup](): void {}
-    [watchable_cleanup](): void {}
     set $ref(nv: any) {
         // !!!!!!!!!!!!!!!!!!!!!!!! emit to any above us (highest first)
         // !!!!!!!!!!!!!!!!!!!!!!!! ^ the above should only happen to special watchers (forex a.b || $deep)
-        this[watchable_emit](); // emit before anything under us potentially emits
+        this.emit(); // emit before anything under us potentially emits
         this.isUnused = false;
         // if(self instanceof list) // do stuff
         if (nv && nv[should_be_raw]) {
@@ -179,7 +165,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
         }
         return this.__v;
     }
-    $get(v: string): WatchableBase<any> {
+    $get(v: string): WatchableBase {
         console.log("$get was used with ", v);
         if (this.__v && this.__v[should_be_raw]) {
             return new FakeWatchable((this.__v as any)[v], this);
@@ -193,7 +179,7 @@ export class WatchableThing<T> extends WatchableBase<void> {
             return value;
         } else {
             let val = (this.__v as any)[v];
-            if (val[watchable_watch]) {
+            if (val[is_watchable]) {
                 return val;
             }
             let value = new FakeWatchable(val, this);
@@ -226,9 +212,6 @@ type RemoveCB = (o: {
 }) => void;
 
 export class List<T> {
-    [watchable_value](): void {}
-    [watchable_setup](): void {}
-    [watchable_cleanup](): void {}
     [should_be_raw]: true = true;
     private __first?: symbol;
     private __items: { [key: string]: ListNode<T> };
@@ -362,68 +345,48 @@ export class List<T> {
     }
 }
 
+export class WatchableDependencyList<T> extends WatchableBase {
+    private dependencyList: WatchableBase[];
+    private requiresUpdate: () => boolean;
+    private getValue: () => T;
+    private removalHandlers: RemovalHandler[] = [];
+    constructor(
+        dependencyList: WatchableBase[],
+        requiresUpdate: () => boolean,
+        getValue: () => T
+    ) {
+        super();
+        this.dependencyList = dependencyList;
+        this.requiresUpdate = requiresUpdate;
+        this.getValue = getValue;
+    }
+    _setup() {
+        this.dependencyList.forEach(item =>
+            this.removalHandlers.push(
+                item.watch(() => {
+                    if (this.requiresUpdate()) this.emit();
+                })
+            )
+        );
+    }
+    _teardown() {
+        this.removalHandlers.forEach(rh => rh());
+    }
+    get $ref(): T {
+        return this.getValue();
+    }
+    set $ref(v: T) {
+        throw new Error("Cannot set value of watchable dependency list.");
+    }
+}
+
 export const $ = {
     createWatchable: (v: any) => new WatchableThing(v),
-    watch,
     list<T>(items: T[]): List<T> {
         return new List(items);
     }
 };
 
-export interface Watchable<T> {
-    [watchable_watch](v: (v: T) => void): () => void; // watch(watcher) returns unwatcher
-    [watchable_value](): T;
-}
-
-export class WatchableDependencyList<T> extends WatchableBase<T> {
-    get $ref(): any {
-        throw new Error("Method not implemented.");
-    }
-    set $ref(_v: any) {
-        throw new Error("Method not implemented.");
-    }
-    private [watchable_cb]: (prev: { ref: any }, skip: () => boolean) => T;
-    private [watchable_data]: Watchable<any>[];
-    private [watchable_cleanupfns]: (() => void)[] = [];
-    private prevValue: { ref: any } = { ref: {} };
-    constructor(data: Watchable<any>[], cb: () => T) {
-        super();
-        this[watchable_cb] = cb;
-        this[watchable_data] = data;
-    }
-    [watchable_value]() {
-        return this[watchable_cb](this.prevValue, () => false);
-    }
-    optionalWatchableValue(): [boolean, T] {
-        let canceled = false;
-        let r = this[watchable_cb](this.prevValue, () => (canceled = true));
-        return [canceled, r];
-    }
-    [watchable_emit](value: T) {
-        this[watchable_watchers].map(w => {
-            w(value);
-        });
-    }
-    [watchable_setup]() {
-        this[watchable_data].forEach(dataToWatch => {
-            this[watchable_cleanupfns].push(
-                dataToWatch[watchable_watch](() => {
-                    // when any data changes
-                    let [
-                        canceled,
-                        valueToReturn
-                    ] = this.optionalWatchableValue(); // get our own value
-                    if (canceled) return;
-                    this[watchable_emit](valueToReturn);
-                })
-            );
-        });
-    }
-    [watchable_cleanup]() {
-        this[watchable_cleanupfns].map(cfn => cfn());
-    }
-}
-
-export function watch<T>(data: Watchable<any>[], cb: () => T): Watchable<T> {
-    return new WatchableDependencyList(data, cb);
-}
+// export interface Watchable {
+//     watch(v: () => void): () => void; // watch(watcher) returns unwatcher
+// }
