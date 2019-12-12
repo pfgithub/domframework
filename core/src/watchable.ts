@@ -42,14 +42,14 @@ export const should_be_raw = Symbol("should be raw");
 
 export type RemovalHandler = (() => void) & { __isRemovalHandler: true };
 
-export interface WatchableBase {
+export interface WatchableBase<T> {
     _setup?(): void;
     _teardown?(): void;
 }
-export abstract class WatchableBase {
+export abstract class WatchableBase<T> {
     watchers: (() => void)[] = [];
-    abstract get $ref(): any;
-    abstract set $ref(v: any);
+    abstract get $ref(): T;
+    abstract set $ref(v: T);
     watch(watcher: () => void): RemovalHandler {
         if (this.watchers.length === 0) {
             // setup
@@ -74,10 +74,10 @@ export abstract class WatchableBase {
 
 // !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
 
-export class FakeWatchable extends WatchableBase {
+export class FakeWatchable extends WatchableBase<any> {
     thing: any;
-    parent: WatchableBase;
-    constructor(thing: any, parent: WatchableBase) {
+    parent: WatchableBase<any>;
+    constructor(thing: any, parent: WatchableBase<any>) {
         super();
         if (typeof thing === "function") {
             thing = thing.bind(parent.$ref);
@@ -99,7 +99,7 @@ export class FakeWatchable extends WatchableBase {
     }
 }
 
-export class WatchableThing<T> extends WatchableBase {
+export class WatchableThing<T> extends WatchableBase<T> {
     private __v!: any;
     isUnused: boolean;
     constructor(v: T, isUnused = false) {
@@ -165,7 +165,7 @@ export class WatchableThing<T> extends WatchableBase {
         }
         return this.__v;
     }
-    $get(v: string): WatchableBase {
+    $get(v: string): WatchableBase<any> {
         console.log("$get was used with ", v);
         if (this.__v && this.__v[should_be_raw]) {
             return new FakeWatchable((this.__v as any)[v], this);
@@ -349,13 +349,16 @@ type WDLCallback<T> = (
     previousData: { ref: any },
     previousValue: { ref: T | undefined },
 ) => T;
-export class WatchableDependencyList<T> extends WatchableBase {
-    private dependencyList: WatchableBase[];
+export class WatchableDependencyList<T> extends WatchableBase<T> {
+    private dependencyList: WatchableBase<any>[];
     private getValue: WDLCallback<T>;
     private previousData: { ref: any } = { ref: {} };
     private removalHandlers: RemovalHandler[] = [];
     private savedReturnValue: { ref: T | undefined } = { ref: undefined };
-    constructor(dependencyList: WatchableBase[], getValue: WDLCallback<T>) {
+    constructor(
+        dependencyList: WatchableBase<any>[],
+        getValue: WDLCallback<T>,
+    ) {
         super();
         this.dependencyList = dependencyList;
         this.getValue = getValue;
@@ -375,7 +378,7 @@ export class WatchableDependencyList<T> extends WatchableBase {
     get $ref(): T {
         let value = this.getValue(this.previousData, this.savedReturnValue);
         this.savedReturnValue = { ref: value };
-        return value; // dom will check strict equality so if a new node is created it will know there is nothing to do
+        return value; // dom will check strict equality so if a new node is created it will know there is nothing to do // <-- the opposite
     }
     set $ref(v: T) {
         throw new Error("Cannot set value of watchable dependency list.");
@@ -387,10 +390,14 @@ export const $ = {
     list<T>(items: T[]): List<T> {
         return new List(items);
     },
-    watch<T>(dependencyList: WatchableBase[], getValue: WDLCallback<T>) {
+    watch<T>(dependencyList: WatchableBase<any>[], getValue: WDLCallback<T>) {
         return new WatchableDependencyList(dependencyList, getValue);
     },
 };
+
+export function isWatch<T>(v: T | WatchableBase<T>): v is WatchableBase<T> {
+    return (v as any)[is_watchable];
+}
 
 // export interface Watchable {
 //     watch(v: () => void): () => void; // watch(watcher) returns unwatcher
