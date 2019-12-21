@@ -29,6 +29,11 @@ return ____curr._1 ? <></> : <></>
 
 // just doing ? for now. more needs to be done though.
 
+function ($a){
+// make sure a is actually watchable
+if(!$a.__is_watchable) throw new Error("parameter a expected to be watchable but not. either remove the $ or use || $bind when calling the function")
+}
+
 */
 
 Object.defineProperty(exports, "__esModule", {
