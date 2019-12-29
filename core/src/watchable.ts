@@ -211,6 +211,9 @@ type RemoveCB = (o: {
     after?: symbol;
 }) => void;
 
+// TODO guess what maps exist
+// use the object itself as keys
+// will be helpful for diff set and remove the requirement to use symbol keys so you can just pass the object (list.forEach(el => list.remove(el))) and still have constant time. might make more work for the garbage collecter but I don't know anything about how the javascript garbage collector works so idk
 export class List<T> {
     [should_be_raw]: true = true;
     private __first?: symbol;
@@ -396,7 +399,7 @@ export const $ = {
 };
 
 export function isWatch<T>(v: T | WatchableBase<T>): v is WatchableBase<T> {
-    return (v as any)[is_watchable];
+    return !!(v as any)[is_watchable];
 }
 
 // export interface Watchable {

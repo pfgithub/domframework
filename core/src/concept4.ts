@@ -1,4 +1,4 @@
-import { WatchableBase, isWatch } from "./watchable";
+import { WatchableBase, isWatch, $ } from "./watchable";
 
 type Watch<T> = WatchableBase<T>;
 // or WatchableDependencyList but why restrict it?
@@ -24,7 +24,7 @@ let nodeIsExisting = (node: UserNodeSpec): node is NodeSpec =>
     !!(node as any)[isExistingNode];
 
 type ExistingNodeSpec = {
-    insertBefore: (parentNode: Node, node: ChildNode) => void;
+    insertBefore: (parentNode: Node, node: ChildNode | null) => void;
     removeSelf: () => void;
     [isExistingNode]: true;
 };
@@ -65,8 +65,10 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
     if (isWatch(spec)) {
         // OPTIMIZATION: if prev is text and next is text, just update node.nodeValue
         // OPTIMIZATION: use virtual dom diffing to update nodes wait...
-        //               ^< virtual dom is ok as long as updates are very limited in size, which is the whole point of dmf
-        let nodeAfter = document.createTextNode("" + spec);
+        //               ^< virtual dom is ok as long as updates are very limited in size, which is the whole point of dmf. don't do something like virtual dom diff for updating an entire array.
+        // what happened there vv
+        let nodeAfter = document.createTextNode("");
+        // ^^ why do we do that what
         let parentNode: Node = document.createDocumentFragment();
         parentNode.appendChild(nodeAfter);
         let prevUserNode: ExistingUserNodeSpec | undefined = undefined;
@@ -113,12 +115,82 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
             [isExistingNode]: true,
         };
     }
-    let node = document.createTextNode("" + spec);
+    if (typeof spec !== "object") {
+        let node = document.createTextNode("" + spec);
+
+        return {
+            insertBefore: (parent, after) => parent.insertBefore(node, after),
+            removeSelf: () => node.remove(),
+            [isExistingNode]: true,
+        };
+    }
+    console.log("!err", spec);
+    throw new Error("invalid node spec: (see previous log)");
+}
+
+type NodeName = "div" | "input";
+
+type NodeTypeMap = {
+    div: HTMLDivElement;
+    input: HTMLInputElement;
+};
+
+type NodeEvent<T extends NodeName> = Event & { currentTarget: NodeTypeMap[T] };
+
+type BaseNodeAttributes<T extends NodeName> = {
+    onInput: (e: NodeEvent<T>) => void;
+};
+
+type NodeAttributesMap<T extends NodeName> = {
+    div: BaseNodeAttributes<T>;
+    input: BaseNodeAttributes<T> & { value: string };
+};
+
+type NodeAttributes<T extends NodeName> = BaseNodeAttributes<T>;
+
+function createHTMLNode<T extends NodeName>(
+    type: NodeName,
+    attrs: NodeAttributes<NodeName>,
+    // ^ this requires every possible attribute to be predefined and does not allow for dynamically changing attributes. spread props might be complicated. for now, this is acceptable.
+): ExistingNodeSpec {
+    let node = document.createElement(type);
+
+    if (isWatch(attrs)) {
+        throw new Error("rest attributes are not supported yet");
+    }
+
+    Object.entries(attrs).forEach(([key, value]) => {
+        if (key.startsWith("on")) {
+            let eventName = key.slice(2).toLowerCase();
+            node.addEventListener(eventName, value as EventListener);
+        }
+        if (key === "style") {
+            throw new Error("setting styles in js is not supported yet");
+        }
+        node.setAttribute(key, "" + value);
+    });
+
     return {
         insertBefore: (parent, after) => parent.insertBefore(node, after),
         removeSelf: () => node.remove(),
         [isExistingNode]: true,
     };
+}
+
+// function createSVGNode // no svg support for now, that seems complicated
+
+{
+    let watchableText = $.createWatchable("initial");
+
+    let node = createNode(watchableText);
+
+    watchableText.$ref = "updated";
+
+    //@ts-ignore
+    window.m = () => (watchableText.$ref = "second update");
+
+    node.insertBefore(document.body, null);
+    console.log("hola");
 }
 
 // <div>
