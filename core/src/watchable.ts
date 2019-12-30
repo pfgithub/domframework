@@ -211,6 +211,12 @@ type RemoveCB = (o: {
     after?: symbol;
 }) => void;
 
+// make a real array wrapper that uses maps to diff update
+// let $a = [1,2,3,1];
+// $a = $a.filter(q => q === 1);
+// emit remove 2 with Array[1,1]
+// emit remove 3 with Array[1,1]
+
 // TODO guess what maps exist
 // use the object itself as keys
 // will be helpful for diff set and remove the requirement to use symbol keys so you can just pass the object (list.forEach(el => list.remove(el))) and still have constant time. might make more work for the garbage collecter but I don't know anything about how the javascript garbage collector works so idk

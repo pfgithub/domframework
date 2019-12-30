@@ -66,11 +66,10 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
         // OPTIMIZATION: if prev is text and next is text, just update node.nodeValue
         // OPTIMIZATION: use virtual dom diffing to update nodes wait...
         //               ^< virtual dom is ok as long as updates are very limited in size, which is the whole point of dmf. don't do something like virtual dom diff for updating an entire array.
-        // what happened there vv
         let nodeAfter = document.createTextNode("");
-        // ^^ why do we do that what
         let parentNode: Node = document.createDocumentFragment();
         parentNode.appendChild(nodeAfter);
+
         let prevUserNode: ExistingUserNodeSpec | undefined = undefined;
         let prevNode: ExistingNodeSpec | undefined = undefined;
         let onchange = () => {
@@ -119,7 +118,11 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
         let node = document.createTextNode("" + spec);
 
         return {
-            insertBefore: (parent, after) => parent.insertBefore(node, after),
+            insertBefore: (parent, after) => {
+                console.log("inserting", node, "before", after, "in", parent);
+                parent.insertBefore(node, after);
+                console.log("...OK");
+            },
             removeSelf: () => node.remove(),
             [isExistingNode]: true,
         };
@@ -150,8 +153,9 @@ type NodeAttributes<T extends NodeName> = BaseNodeAttributes<T>;
 
 function createHTMLNode<T extends NodeName>(
     type: NodeName,
-    attrs: NodeAttributes<NodeName>,
+    attrs: Partial<NodeAttributes<NodeName>>,
     // ^ this requires every possible attribute to be predefined and does not allow for dynamically changing attributes. spread props might be complicated. for now, this is acceptable.
+    child: ExistingNodeSpec,
 ): ExistingNodeSpec {
     let node = document.createElement(type);
 
@@ -170,9 +174,55 @@ function createHTMLNode<T extends NodeName>(
         node.setAttribute(key, "" + value);
     });
 
+    child.insertBefore(node, null);
+
     return {
         insertBefore: (parent, after) => parent.insertBefore(node, after),
-        removeSelf: () => node.remove(),
+        removeSelf: () => {
+            child.removeSelf();
+            node.remove();
+        },
+        [isExistingNode]: true,
+    };
+}
+
+function createFragmentNode(children: ExistingNodeSpec[]): ExistingNodeSpec {
+    let nodeAfter = document.createTextNode("");
+    let parentNode: Node = document.createDocumentFragment();
+    parentNode.appendChild(nodeAfter);
+
+    children.forEach(child => {
+        console.log(
+            "fragment inserting",
+            child,
+            "into",
+            parentNode,
+            "before",
+            nodeAfter,
+        );
+        child.insertBefore(parentNode, nodeAfter);
+    });
+
+    let nodeHasBeenInserted = false;
+
+    return {
+        insertBefore: (parent, after) => {
+            console.log("inserting", parentNode, "in", parent, "before", after);
+            if (nodeHasBeenInserted) {
+                throw new Error(
+                    "Attempting to insert a node multiple times. This may happen if nodes are reused. This is not supported.",
+                );
+            }
+            nodeHasBeenInserted = true;
+            parent.insertBefore(parentNode, after);
+            parentNode = parent;
+            console.log("finished insertion. parent is now", parentNode);
+        },
+        removeSelf: () => {
+            // call removal handlers
+            children.forEach(child => child.removeSelf());
+            parentNode = document.createDocumentFragment();
+        },
         [isExistingNode]: true,
     };
 }
@@ -189,7 +239,11 @@ function createHTMLNode<T extends NodeName>(
     //@ts-ignore
     window.m = () => (watchableText.$ref = "second update");
 
-    node.insertBefore(document.body, null);
+    let children = createFragmentNode([node]);
+
+    let encapsulatingNode = createHTMLNode("div", {}, children);
+
+    encapsulatingNode.insertBefore(document.body, null);
     console.log("hola");
 }
 
