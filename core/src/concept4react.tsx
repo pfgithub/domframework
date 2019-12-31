@@ -11,7 +11,7 @@ declare global {
     }
 }
 
-type GenericAttributes = any;
+export type GenericAttributes = any;
 
 export type FunctionalComponent = (props: GenericAttributes) => JSX.Element;
 
@@ -59,15 +59,22 @@ export function mount(
     dom.createNode(element).createBefore(parent, before || null);
 }
 
+const CustomComponent: FunctionalComponent = props => {
+    console.log(props);
+    return (
+        <input
+            type="password"
+            onInput={e => console.log(e.currentTarget.value)}
+        />
+    );
+};
+
 {
     let el = (
         <div>
-            text. some more text.{" "}
-            <input
-                type="password"
-                onInput={e => console.log(e.currentTarget.value)}
-            />
+            text. some more text. <CustomComponent /> <CustomComponent />
         </div>
     );
     mount(el, document.body);
+    mount("hi", document.body);
 }

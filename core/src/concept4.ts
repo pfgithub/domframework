@@ -114,7 +114,7 @@ export type BaseNodeAttributes<T extends NodeName> = {
     class: string;
 };
 
-export type NodeAttributesMap<T extends NodeName> = {
+type NodeAttributesMap<T extends NodeName> = {
     div: BaseNodeAttributes<T>;
     input: BaseNodeAttributes<T> & {
         value: string;
