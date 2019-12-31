@@ -10,12 +10,15 @@
         "LICENSE"
     ],
     "scripts": {
-        "build": "rm -rf dist && tsc",
-        "prepublishOnly": "yarn build",
-        "test": "ts-node test/v2"
+        "build": "echo \"...\" && tsc && echo \"done\"",
+        "clean": "rm -rf dist",
+        "prepublishOnly": "yarn clean && yarn build",
+        "test": "ts-node test/v2",
+        "watch": "onchange src/\\*\\*/\\*.\\{ts,tsx\\} -- yarn build"
     },
     "devDependencies": {
         "@types/node": "^12.12.11",
+        "onchange": "^6.1.0",
         "prettier": "^1.19.1",
         "ts-node": "^8.5.2",
         "typescript": "^3.7.2"

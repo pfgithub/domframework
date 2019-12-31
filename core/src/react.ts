@@ -1,4 +1,5 @@
-import * as dom from "./concept4";
+import * as dom from "./dom";
+import { List } from "./watchable";
 
 type IntrinsicElementsMap = {
     [key in dom.NodeName]: Partial<dom.NodeAttributes<key>>;
@@ -59,22 +60,4 @@ export function mount(
     dom.createNode(element).createBefore(parent, before || null);
 }
 
-const CustomComponent: FunctionalComponent = props => {
-    console.log(props);
-    return (
-        <input
-            type="password"
-            onInput={e => console.log(e.currentTarget.value)}
-        />
-    );
-};
-
-{
-    let el = (
-        <div>
-            text. some more text. <CustomComponent /> <CustomComponent />
-        </div>
-    );
-    mount(el, document.body);
-    mount("hi", document.body);
-}
+export const ListRender = dom.createListRender;

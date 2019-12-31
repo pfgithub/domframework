@@ -1,6 +1,6 @@
 "dmf prefix $";
 
-import { React, ListRender, $, $bind, List } from "dmf";
+import { React, ListRender, $, $bind, List, mount } from "dmf";
 
 $;
 React;
@@ -13,7 +13,7 @@ function ToggleView(children: () => JSX.Element) {
     let $isVisible = true;
     return (
         <div>
-            <button onclick={() => ($isVisible = !$isVisible)}>
+            <button onClick={() => ($isVisible = !$isVisible)}>
                 {$isVisible ? "Hide" : "Show"}
             </button>{" "}
             {$isVisible ? (
@@ -25,56 +25,53 @@ function ToggleView(children: () => JSX.Element) {
     );
 }
 
-document.body.appendChild(
-    (
-        <div>
-            {ToggleView(() => (
-                <div>
-                    {NumberThing($num || $bind)}
-                    {NumberThing($num || $bind)}
-                    {NumberThing($num || $bind)}
-                    <div
-                        className="box"
-                        onmousemove={e => {
-                            $x = e.clientX;
-                            $y = e.clientY;
-                        }}
-                    >
-                        Mouse position: x: {$x}, y: {$y}
-                    </div>
+mount(
+    <div>
+        {ToggleView(() => (
+            <div>
+                {NumberThing($num || $bind)}
+                {NumberThing($num || $bind)}
+                {NumberThing($num || $bind)}
+                <div
+                    class="box"
+                    onMouseMove={e => {
+                        $x = e.clientX;
+                        $y = e.clientY;
+                    }}
+                >
+                    Mouse position: x: {$x}, y: {$y}
                 </div>
-            ))}
-        </div>
-    ).node,
+            </div>
+        ))}
+    </div>,
+    document.body,
 );
 
 function NumberThing($q: number) {
     // for functionalcomponents, every argument should get auto converted to a watchable whether it is or not
     return (
         <span>
-            <button onclick={() => $q--}>--</button>
+            <button onClick={() => $q--}>--</button>
             {$q.toFixed()}
-            <button onclick={() => $q++}>++</button>
+            <button onClick={() => $q++}>++</button>
         </span>
     );
 }
 
-let $obj: { a: 5; b: 6 } | undefined = undefined;
-document.body.appendChild(
-    (
-        <div>
-            {$obj === undefined ? (
-                <span>not defined</span>
-            ) : (
-                <span>
-                    {NumberThing($obj.a || $bind)}{" "}
-                    {NumberThing($obj.b || $bind)}
-                </span>
-            )}
-            <button onclick={() => ($obj = undefined)}>set undefined</button>
-            <button onclick={() => ($obj = { a: 5, b: 6 })}>set 5, 6</button>
-        </div>
-    ).node,
+let $obj = undefined as { a: 5; b: 6 } | undefined;
+mount(
+    <div>
+        {$obj === undefined ? (
+            <span>not defined</span>
+        ) : (
+            <span>
+                {NumberThing($obj.a || $bind)} {NumberThing($obj.b || $bind)}
+            </span>
+        )}
+        <button onClick={() => ($obj = undefined)}>set undefined</button>
+        <button onClick={() => ($obj = { a: 5, b: 6 })}>set 5, 6</button>
+    </div>,
+    document.body,
 );
 
 type NestedT =
@@ -86,12 +83,12 @@ function NestedTest($o: NestedT) {
         <div>
             {$o ? (
                 <div>
-                    <button onclick={() => ($o = undefined)}>Remove</button>
+                    <button onClick={() => ($o = undefined)}>Remove</button>
                     <input
                         type="text"
                         value={$o.text}
-                        oninput={e =>
-                            ($o.text = (e.currentTarget as HTMLInputElement).value)
+                        onInput={e =>
+                            ($o!.text = (e.currentTarget as HTMLInputElement).value)
                         }
                     />
                     {NumberThing($o.counter || $bind)}
@@ -103,7 +100,7 @@ function NestedTest($o: NestedT) {
             ) : (
                 <div>
                     <button
-                        onclick={() =>
+                        onClick={() =>
                             ($o = {
                                 a: undefined,
                                 b: undefined,
@@ -122,40 +119,45 @@ function NestedTest($o: NestedT) {
 }
 
 let $nestedO: NestedT;
-document.body.appendChild(NestedTest($nestedO || $bind).node);
+mount(NestedTest($nestedO || $bind), document.body);
 
-document.body.appendChild(ToggleView(() => NestedTest($nestedO || $bind)).node);
+mount(
+    ToggleView(() => NestedTest($nestedO || $bind)),
+    document.body,
+);
 
 let $showSection = true;
-document.body.appendChild(
-    (
-        <div>
-            {$showSection ? (
-                <div>
-                    <button
-                        onclick={() => {
-                            window.startHighlightUpdates();
-                            $showSection = false;
-                        }}
-                    >
-                        highlight updates
-                    </button>
-                    <button
-                        onclick={() =>
-                            (window.onNodeUpdate = n => console.log(n))
-                        }
-                    >
-                        log updates
-                    </button>
-                    <button onclick={() => (window.onNodeUpdate = () => {})}>
-                        ignore updates
-                    </button>
-                </div>
-            ) : (
-                <div></div>
-            )}
-        </div>
-    ).node,
+mount(
+    <div>
+        {$showSection ? (
+            <div>
+                <button
+                    onClick={() => {
+                        (window as any).startHighlightUpdates();
+                        $showSection = false;
+                    }}
+                >
+                    highlight updates
+                </button>
+                <button
+                    onClick={() =>
+                        ((window as any).onNodeUpdate = (n: any) =>
+                            console.log(n))
+                    }
+                >
+                    log updates
+                </button>
+                <button
+                    onClick={() => ((window as any).onNodeUpdate = () => {})}
+                >
+                    ignore updates
+                </button>
+            </div>
+        ) : (
+            <div></div>
+        )}
+    </div>,
+    document.body,
 );
 
 function TodoList($list: List<string>) {
@@ -167,18 +169,18 @@ function TodoList($list: List<string>) {
                     <input
                         type="text"
                         value={$item}
-                        oninput={(e: any) => ($item = e.currentTarget.value)}
+                        onInput={e => ($item = e.currentTarget.value)}
                     />
                 </div>
             ))}
-            <button onclick={() => $list.push("hmm")}>+</button>
+            <button onClick={() => $list.push("hmm")}>+</button>
         </div>
     );
 }
 
 let $list = $.list(["hi"]);
-document.body.appendChild(TodoList($list || $bind).node);
-document.body.appendChild(TodoList($list || $bind).node);
+mount(TodoList($list || $bind), document.body);
+mount(TodoList($list || $bind), document.body);
 
 type NodeType = { num: number; subitems: List<NodeType> };
 
@@ -197,7 +199,7 @@ function NodeTestThing($list: List<NodeType>) {
                 <li>
                     {" "}
                     <button
-                        onclick={() =>
+                        onClick={() =>
                             $list.push({ num: 5, subitems: $.list([]) })
                         }
                     >
@@ -210,5 +212,5 @@ function NodeTestThing($list: List<NodeType>) {
 }
 
 let $listTest = $.list<NodeType>([]);
-document.body.appendChild(NodeTestThing($listTest || $bind).node);
-document.body.appendChild(NodeTestThing($listTest || $bind).node);
+mount(NodeTestThing($listTest || $bind), document.body);
+mount(NodeTestThing($listTest || $bind), document.body);
