@@ -52,12 +52,21 @@ export const React = {
     },
 };
 
-export function mount(
+export function mountSlow(
     element: JSX.Element,
     parent: Node,
     before?: ChildNode | null,
 ) {
     dom.createNode(element).createBefore(parent, before || null);
+}
+
+export function mount(
+    element: JSX.Element,
+    parent: Node,
+) {
+    let parentEl = document.createElement("div");
+    dom.createNode(element).createBefore(parentEl, null);
+    parent.appendChild(parentEl);
 }
 
 export const ListRender = dom.createListRender;

@@ -39,11 +39,12 @@ if(!$a.__is_watchable) throw new Error("parameter a expected to be watchable but
 Object.defineProperty(exports, "__esModule", {
     value: true,
 });
-module.exports.default = function({ types: t }) {
+module.exports.default = function({ types: t, template }) {
     let $call = v =>
         t.memberExpression(t.identifier("$"), t.identifier("" + v));
     let wrap = node => t.memberExpression(node, t.identifier("$ref"));
     let matches = (str, prefix) => str.startsWith(prefix) && str !== prefix;
+
     return {
         name: "ast-transform",
         visitor: {
@@ -177,6 +178,16 @@ module.exports.default = function({ types: t }) {
                 // }
             },
             JSXSpreadAttribute(path) {
+                if (
+                    path.findParent(path => path.node.__is_supposed_to_skip) ||
+                    path.node.__is_supposed_to_skip
+                ) {
+                    return;
+                }
+                let prefixNode = path.findParent(
+                    path => path.node.__dmf_prefix,
+                );
+                if (!prefixNode) return;
                 throw new Error("Spread attributes are not supported yet");
             },
             Directive(path) {
@@ -390,70 +401,43 @@ module.exports.default = function({ types: t }) {
                         // nothing to do. don't skip.
                         return;
                     }
-                    path.node.expression = t.callExpression($call`watch`, [
-                        t.arrayExpression(watchables),
-                        t.arrowFunctionExpression(
-                            [
-                                t.identifier("____prev"),
-                                t.identifier("____skip"),
-                            ],
-                            t.blockStatement([
-                                t.variableDeclaration("const", [
-                                    t.variableDeclarator(
-                                        t.identifier("____curr"),
-                                        t.objectExpression(
-                                            tests.map((test, index) =>
-                                                t.objectProperty(
-                                                    t.identifier("_" + index),
-                                                    test,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                ]),
-                                ...tests.map((test, index) =>
-                                    t.ifStatement(
-                                        t.binaryExpression(
-                                            "===",
-                                            t.memberExpression(
-                                                t.identifier("____curr"),
-                                                t.identifier("_" + index),
-                                            ),
-                                            t.memberExpression(
-                                                t.memberExpression(
-                                                    t.identifier("____prev"),
-                                                    t.identifier("ref"),
-                                                ),
-                                                t.identifier("_" + index),
-                                            ),
-                                        ),
-                                        t.blockStatement([
-                                            t.ifStatement(
-                                                t.callExpression(
-                                                    t.identifier("____skip"),
-                                                    [],
-                                                ),
-                                                t.blockStatement([
-                                                    t.returnStatement(),
-                                                ]),
-                                            ),
-                                        ]),
-                                    ),
+
+                    let ifTemplate = template(`
+                        if(____curr.%%index%% === ____prev.ref.%%index%%){
+                            if(____saved) {
+                                console.log("Skipping because saved value", ____saved.ref)
+                                return ____saved.ref;
+                            }
+                        }
+                    `);
+
+                    let expressionTemplate = template(`
+                        %%call_watch%%(%%watchables%%, (____prev, ____saved) => {
+                            const ____curr = %%tests%%;
+                            %%test_ifs%%
+                            ____prev.ref = ____curr;
+                            return %%result%%;
+                        })
+                    `);
+
+                    path.node.expression = expressionTemplate({
+                        call_watch: $call`watch`,
+                        watchables: t.arrayExpression(watchables),
+                        tests: t.objectExpression(
+                            tests.map((test, index) =>
+                                t.objectProperty(
+                                    t.identifier("_" + index),
+                                    test,
                                 ),
-                                t.expressionStatement(
-                                    t.assignmentExpression(
-                                        "=",
-                                        t.memberExpression(
-                                            t.identifier("____prev"),
-                                            t.identifier("ref"),
-                                        ),
-                                        t.identifier("____curr"),
-                                    ),
-                                ),
-                                t.returnStatement(path.node.expression),
-                            ]),
+                            ),
                         ),
-                    ]);
+                        test_ifs: tests.map((test, index) => {
+                            return ifTemplate({
+                                index: t.identifier("_" + index),
+                            });
+                        }),
+                        result: path.node.expression,
+                    }).expression;
                     path.skip();
                     path.node.expression.__is_supposed_to_skip = true;
                 },

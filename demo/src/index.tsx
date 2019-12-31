@@ -2,6 +2,8 @@
 
 import { React, ListRender, $, $bind, List, mount } from "dmf";
 
+import "./drawBoxAroundElement";
+
 $;
 React;
 
@@ -53,6 +55,7 @@ function NumberThing($q: number) {
         <span>
             <button onClick={() => $q--}>--</button>
             {$q.toFixed()}
+            {console.log("value is", $q)}
             <button onClick={() => $q++}>++</button>
         </span>
     );
@@ -87,9 +90,7 @@ function NestedTest($o: NestedT) {
                     <input
                         type="text"
                         value={$o.text}
-                        onInput={e =>
-                            ($o!.text = (e.currentTarget as HTMLInputElement).value)
-                        }
+                        onInput={e => ($o!.text = e.currentTarget.value)}
                     />
                     {NumberThing($o.counter || $bind)}
                     <ul>

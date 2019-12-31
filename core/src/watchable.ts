@@ -4,36 +4,8 @@
 
 export declare let $bind: never;
 
-let nextTickInfo:
-    | {
-          symbol: symbol;
-          handlers: (() => void)[];
-      }
-    | undefined;
-
-function _handleNextTick() {
-    if (!nextTickInfo) return;
-    nextTickInfo.handlers.forEach(handler => {
-        // typescript flow control needs to be able to know
-        // when something happens immediately
-        delete (handler as any)[nextTickInfo!.symbol];
-        handler();
-    });
-    nextTickInfo = undefined;
-}
-
 function nextTick(cb: () => void) {
-    if (!nextTickInfo) {
-        nextTickInfo = {
-            symbol: Symbol("next tick"),
-            handlers: [],
-        };
-        setTimeout(() => _handleNextTick(), 0);
-    }
-    let itemSymbol = Symbol("cb to be called next tick");
-    if ((cb as any)[nextTickInfo.symbol]) return; // handler already registered. no need to call it twice.
-    (cb as any)[nextTickInfo.symbol] = itemSymbol;
-    nextTickInfo.handlers.push(cb);
+    setTimeout(() => cb(), 0);
 }
 
 export const is_watchable = Symbol("is watchable");
@@ -65,6 +37,8 @@ export abstract class WatchableBase<T> {
         }) as RemovalHandler;
     }
     emit() {
+        console.log("emitting for watchers", this.watchers);
+        this.watchers.forEach(w => w());
         nextTick(() => this.watchers.forEach(w => w()));
     }
     get [is_watchable]() {
@@ -356,14 +330,14 @@ export class List<T> {
 
 type WDLCallback<T> = (
     previousData: { ref: any },
-    previousValue: { ref: T | undefined },
+    previousValue: { ref: T } | undefined,
 ) => T;
 export class WatchableDependencyList<T> extends WatchableBase<T> {
     private dependencyList: WatchableBase<any>[];
     private getValue: WDLCallback<T>;
     private previousData: { ref: any } = { ref: {} };
     private removalHandlers: RemovalHandler[] = [];
-    private savedReturnValue: { ref: T | undefined } = { ref: undefined };
+    private savedReturnValue: { ref: T } | undefined = undefined;
     constructor(
         dependencyList: WatchableBase<any>[],
         getValue: WDLCallback<T>,
@@ -376,12 +350,14 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
         this.dependencyList.forEach(item =>
             this.removalHandlers.push(
                 item.watch(() => {
+                    console.log("item watch emitted");
                     this.emit();
                 }),
             ),
         );
     }
     _teardown() {
+        console.log("tearing down up watcher for", this.removalHandlers);
         this.removalHandlers.forEach(rh => rh());
     }
     get $ref(): T {

@@ -54,6 +54,7 @@ export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
                 let prevUserNode: ExistingUserNodeSpec | undefined = undefined;
                 let prevNode: CreatedNodeSpec | undefined = undefined;
                 let onchange = () => {
+                    console.log("changed, updating", spec);
                     if (!nodeExists) {
                         console.log(
                             "!!ERROR: Node updated after removal, even though the watcher was unregistered. This should never happen.!",
@@ -70,6 +71,7 @@ export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
                     prevNode = newNode.createBefore(parent, nodeAfter);
                 };
                 let unregisterWatcher = spec.watch(onchange);
+                console.log("watching", spec);
                 setTimeout(() => onchange(), 0);
                 // it might be fine to onchange immediately;
                 // next tick might not be great for performance when inserting large trees
@@ -153,6 +155,10 @@ export function createHTMLNode<T extends NodeName>(
             }
 
             Object.entries(attrs).forEach(([key, value]) => {
+                if (isWatch(value)) {
+                    console.log("watchable attributes are not supported yet");
+                    return;
+                }
                 if (key.startsWith("on")) {
                     let eventName = key.slice(2).toLowerCase();
                     node.addEventListener(eventName, value as EventListener);

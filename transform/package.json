@@ -7,14 +7,13 @@
     ],
     "license": "MIT",
     "author": "pfg <omegariisthebest@gmail.com>",
-    "files": [
-        "index.js"
-    ],
     "main": "dist/transform.js",
     "repository": "https://github.com/pfgithub/domframework",
     "scripts": {
-        "build": "rm -rf dist && cp -r src dist",
-        "prepublishOnly": "yarn build",
+        "build": "cp -r src/* dist/",
+        "clean": "rm -rf dist",
+        "watch": "onchange src/\\*\\*/\\*.js -- yarn build",
+        "prepublishOnly": "yarn clean && yarn build",
         "test": "yarn build && tap --coverage-report=html --no-browser --100 test/test.js"
     },
     "dependencies": {},
