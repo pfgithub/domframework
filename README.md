@@ -1,136 +1,21 @@
-readme wip
+## development setup:
 
-Truly reactive dom updates with no virtual dom and no diffing and typescript support.
+### initial:
 
-# Demo
+- install node and yarn
+- go to core and `yarn install`
+-   go to core and `yarn link`
+-   go to transform and `yarn install`
+-   go to transform and `yarn link`
+-   go to demo and `yarn link dmf`
+-   go to demo and `yarn link babel-plugin-transform-dmf`
+-   go to demo and `yarn install`
 
-v2:
+### every time:
 
-```
-let $data = {count: 5};
-document.body.appendChild((
-<div>
-	Count: {$data.count}{" "}
-	<button onclick={() => $data.count++}>Increase Count</button>
-</div>
-).node);
-```
-
-react:
-
-```
-let [data, setData] = useState({count: 5});
-return <div>
-	Count: {data.count}{" "}
-	<button onclick={() => setData({...data, count: data.count + 1})}>Increase Count</button>
-</div>
-
-```
-
-v1:
-
-```
-let data = watchable({count: 5});
-
-document.body.appendChild((
-<div>
-	Count: {watch([data.count], () => data.count.ref)}{" "}
-	<button onclick={() => data.count.ref++}>Increase Count</button>
-</div>
-).node);
-```
-
-# Why domframework instead of ...
-
-domframework emphasizes performance. renders only happen when a component is created, then only the necessary parts of the component are updated. when adding an item to a list, only the new item even has any callbacks happening.
-
--   Best practices include performance
--   ( in react the "best practice" is to do everything as inefficiently as possible until performance starts getting impacted )
--   Typescript everywhere, even in templates
--   ( in angular, vue, lit-html, svelte they don't)
--   No diffing (virtual dom)
--   ( in react, lit-html to update some part of the page, you return an object which gets diffed with the real page to find what needs changing (it's more complicated than that))
--   Embeddable into existing pages and frameworks
--   ( every other framework can too, this isn't really very special)
-
-```
-"dmf prefix $"
-
-let $data = {a: 1, b: 2}; // $ denotes watchable.
-
-// this won't work vv because $data is a number and .value is a string
-
-document.body.appendChild((
-<div>
-	<input type="number" value={$data} oninput={e => $data = e.currentTarget.value} />
-	<p>{$data.a} {$data.b}, {$data.a + $data.b}</p>
-</div>
-).node);
-
-// ^ lots of that can be minimized by building a language (like svelte does) but doing this removes good type checking
-
----
-
-react (with hooks)
-
-import React, { useState } from 'react';
-
-export default () => {
-  const [a, setA] = useState(1);
-  const [b, setB] = useState(2);
-  // this won't work vv because $data is a number and a,b is a string
-
-  return (
-    <div>
-      <input type="number" value={a} onChange={e => setA(e.currentTarget.value)}/>
-      <input type="number" value={b} onChange={e => setB(e.currentTarget.value)}/>
-      <p>{a} + {b} = {a + b}</p>
-    </div>
-  );
-};
-
----
-
-svelte:
-
-<script>
-	let a = 1;
-	let b = 2;
-</script>
-
-<input type="number" bind:value={a}>
-<input type="number" bind:value={b}>
-
-<p>{a} + {b} = {a + b}</p>
-```
-
-# concepts
-
-quad state loading
-
-```
-type Loader<T> = {state: "init"} | {state: "lodaing", progress?: number} | {state: "loaded", value: T} | {state: "error", message: string};
-
-let $loader: Loader<number> = {state: "init"};
-
-// when the event is emitted for state changing, progress needs to have changed already
-// don't emit events one at a time, change everything and emit on next tick
-
-<div>
-{
-$loader.state === "init"
-? <div><button onclick={() => $loader = {state: "loading", progress: 0}}>Click to Start Load</button></div>
-:
-$loader.state === "loading"
-? <span>Progress: {loader.progress*100}%. <button>Cancel request</buton></span>
-:
-$loader.state === "loaded"
-? <span>{loader.value}</span>
-:
-$loader.state === "error"
-? <span>An error occured. <button onclick={() => $loader = {state: "loading", progress: 0}}>Retry</button></span>
-: <span>never</span>
-}
-</div>
-
-```
+-   open 5 terminals
+-   go to core and `yarn watch`
+-   go to transform and `yarn watch`
+-   go to demo and `yarn watch`
+-   go to demo and `yarn serve`
+-   go to . and `onchange (for file in (find . -type f -not -path '*node_modules*' -not -path '*.git*' -not -path './junk*'); git check-ignore $file -q; if test $status -eq 0; else; echo $file; end; end && echo "Ready" 1>&2) -- prettier --write '{{changed}}'` or set up prettier in your editor on save or on commit
