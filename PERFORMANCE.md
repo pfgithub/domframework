@@ -1,0 +1,1 @@
+Top to bottom creation is a problem for performance. To fix this, the topmost element should get created in a documentfragment first or something and then have its parent updated.
