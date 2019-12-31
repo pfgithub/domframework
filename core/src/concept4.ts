@@ -1,6 +1,6 @@
 import { WatchableBase, isWatch, $ } from "./watchable";
 
-type Watch<T> = WatchableBase<T>;
+export type Watch<T> = WatchableBase<T>;
 // or WatchableDependencyList but why restrict it?
 // watchabledependencylist is the only thing that will actually be used
 
@@ -15,28 +15,28 @@ let q: () => {
 // (this will use lots of blank text nodes but those can)
 // (          be optimized later                        )
 
-type primitive = string | number | boolean | bigint | null | undefined;
+export type primitive = string | number | boolean | bigint | null | undefined;
 
-type ExistingUserNodeSpec = primitive | ExistingNodeSpec;
+export type ExistingUserNodeSpec = primitive | CreatableNodeSpec;
 
 const isExistingNode = Symbol("is_existing_node");
 let nodeIsExisting = (node: UserNodeSpec): node is NodeSpec =>
     !!(node as any)[isExistingNode];
 
-type ExistingCreatedNodeSpec = {
+export type CreatedNodeSpec = {
     removeSelf: () => void;
 };
-type ExistingNodeSpec = {
+export type CreatableNodeSpec = {
     createBefore: (
         parentNode: Node,
         after: ChildNode | null,
-    ) => ExistingCreatedNodeSpec;
+    ) => CreatedNodeSpec;
     [isExistingNode]: true;
 };
-type NodeSpec = ExistingNodeSpec | Watch<ExistingNodeSpec>;
-type UserNodeSpec = ExistingUserNodeSpec | Watch<ExistingUserNodeSpec>;
+export type NodeSpec = CreatableNodeSpec | Watch<CreatableNodeSpec>;
+export type UserNodeSpec = ExistingUserNodeSpec | Watch<ExistingUserNodeSpec>;
 
-function createNode(spec: UserNodeSpec): ExistingNodeSpec {
+export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
     if (nodeIsExisting(spec)) {
         return spec; // already a node, no action to take
     }
@@ -52,7 +52,7 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
                 let nodeExists = true;
 
                 let prevUserNode: ExistingUserNodeSpec | undefined = undefined;
-                let prevNode: ExistingCreatedNodeSpec | undefined = undefined;
+                let prevNode: CreatedNodeSpec | undefined = undefined;
                 let onchange = () => {
                     if (!nodeExists) {
                         console.log(
@@ -99,32 +99,39 @@ function createNode(spec: UserNodeSpec): ExistingNodeSpec {
     };
 }
 
-type NodeName = "div" | "input";
+export type NodeName = "div" | "input";
 
-type NodeTypeMap = {
+export type NodeTypeMap = {
     div: HTMLDivElement;
     input: HTMLInputElement;
 };
 
-type NodeEvent<T extends NodeName> = Event & { currentTarget: NodeTypeMap[T] };
-
-type BaseNodeAttributes<T extends NodeName> = {
-    onInput: (e: NodeEvent<T>) => void;
+export type NodeEvent<T extends NodeName> = Event & {
+    currentTarget: NodeTypeMap[T];
 };
 
-type NodeAttributesMap<T extends NodeName> = {
+export type BaseNodeAttributes<T extends NodeName> = {
+    class: string;
+};
+
+export type NodeAttributesMap<T extends NodeName> = {
     div: BaseNodeAttributes<T>;
-    input: BaseNodeAttributes<T> & { value: string };
+    input: BaseNodeAttributes<T> & {
+        value: string;
+        type: string;
+        checked: boolean;
+        onInput: (e: NodeEvent<T>) => void;
+    };
 };
 
-type NodeAttributes<T extends NodeName> = BaseNodeAttributes<T>;
+export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
 
-function createHTMLNode<T extends NodeName>(
+export function createHTMLNode<T extends NodeName>(
     type: NodeName,
     attrs: Partial<NodeAttributes<NodeName>>,
     // ^ this requires every possible attribute to be predefined and does not allow for dynamically changing attributes. spread props might be complicated. for now, this is acceptable.
-    child: ExistingNodeSpec,
-): ExistingNodeSpec {
+    child: CreatableNodeSpec,
+): CreatableNodeSpec {
     return {
         [isExistingNode]: true,
         createBefore(parent, after) {
@@ -146,6 +153,9 @@ function createHTMLNode<T extends NodeName>(
                         "setting styles in js is not supported yet",
                     );
                 }
+                if (key === "children") {
+                    return; // skip
+                }
                 node.setAttribute(key, "" + value);
             });
 
@@ -162,7 +172,9 @@ function createHTMLNode<T extends NodeName>(
     };
 }
 
-function createFragmentNode(children: ExistingNodeSpec[]): ExistingNodeSpec {
+export function createFragmentNode(
+    children: CreatableNodeSpec[],
+): CreatableNodeSpec {
     return {
         [isExistingNode]: true,
         createBefore(parent, after) {
@@ -191,8 +203,6 @@ function createFragmentNode(children: ExistingNodeSpec[]): ExistingNodeSpec {
         },
     };
 }
-
-// function createSVGNode // no svg support for now, that seems complicated
 
 {
     let watchableText = $.createWatchable("initial");

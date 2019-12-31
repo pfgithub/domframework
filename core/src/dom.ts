@@ -199,13 +199,6 @@ export type TagNameToPropsMap = {
     >;
 };
 
-declare global {
-    namespace JSX {
-        interface IntrinsicElements extends TagNameToPropsMap {}
-        interface Element extends ExistingComponentModel {}
-    }
-}
-
 export function ListRender<T>(
     list: List<T>,
     cb: (item: T, symbol: symbol) => JSX.Element,

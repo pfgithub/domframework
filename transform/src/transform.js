@@ -176,6 +176,9 @@ module.exports.default = function({ types: t }) {
                 }
                 // }
             },
+            JSXSpreadAttribute(path) {
+                throw new Error("Spread attributes are not supported yet");
+            },
             Directive(path) {
                 if (
                     path.findParent(path => path.node.__is_supposed_to_skip) ||
