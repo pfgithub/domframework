@@ -29,6 +29,7 @@ export const React = {
             componentCreator = (attrs: GenericAttributes) =>
                 dom.createHTMLNode(nodeName, attrs, attrs.children);
         }
+        // !!! PERFORMANCE for creating html nodes, don't make all the props watchable
         let finalProps = {
             ...props,
             // !!! performance don't create a fragment if there are no children
@@ -60,10 +61,7 @@ export function mountSlow(
     dom.createNode(element).createBefore(parent, before || null);
 }
 
-export function mount(
-    element: JSX.Element,
-    parent: Node,
-) {
+export function mount(element: JSX.Element, parent: Node) {
     let parentEl = document.createElement("div");
     dom.createNode(element).createBefore(parentEl, null);
     parent.appendChild(parentEl);
