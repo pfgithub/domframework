@@ -1,257 +1,305 @@
-console.log("dmf loaded");
+import { WatchableBase, isWatch, $, List } from "./watchable";
 
-import {
-    watchable_watch,
-    watchable_value,
-    Watchable,
-    List,
-    symbolKey,
-} from "./watchable";
+export type Watch<T> = WatchableBase<T>;
+// or WatchableDependencyList but why restrict it?
+// watchabledependencylist is the only thing that will actually be used
 
-declare global {
-    interface Window {
-        onNodeUpdate: (node: Node) => void;
-        startHighlightUpdates: () => void;
-    }
-}
+// real fragments should be possible
+// nodes should return
+let q: () => {
+    nodes: Node[];
+    insertBefore: (parent: ChildNode, before: ChildNode) => void;
+};
+// the mounter should call back to the node
+// with the node after
+// (this will use lots of blank text nodes but those can)
+// (          be optimized later                        )
 
-window.onNodeUpdate = () => {};
-// window.onNodeUpdate = (node: Node) => console.log("NODE UPDATED:", node);
+export type primitive = string | number | boolean | bigint | null | undefined;
 
-// note that we are going to have problems with watchers not getting unregistered. elements need to return destructors and these need to be called on element removal.
+export type ExistingUserNodeSpec = primitive | CreatableNodeSpec;
 
-export interface WatchableComponent extends Watchable<ComponentModel> {}
+const isExistingNode = Symbol("is_existing_node");
+let nodeIsExisting = (node: UserNodeSpec): node is NodeSpec =>
+    !!(node as any)[isExistingNode];
 
-export type ExistingComponentModel = {
-    node: ChildNode /*[]*/;
+export type CreatedNodeSpec = {
     removeSelf: () => void;
 };
-export type ComponentModel =
-    | ExistingComponentModel
-    | string
-    | WatchableComponent;
+export type CreatableNodeSpec = {
+    createBefore: (
+        parentNode: Node,
+        ___afterOnce: ChildNode | null, // may change after creation. if you rely on this staying the same, make your own after node and use it instead.
+    ) => CreatedNodeSpec;
+    [isExistingNode]: true;
+};
+export type NodeSpec = CreatableNodeSpec | Watch<CreatableNodeSpec>;
+export type UserNodeSpec = ExistingUserNodeSpec | Watch<ExistingUserNodeSpec>;
 
-export function isWatchable<T>(v: T | Watchable<T>): v is Watchable<T> {
-    return !!(v as any)[watchable_watch];
-}
+export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
+    if (nodeIsExisting(spec)) {
+        return spec; // already a node, no action to take
+    }
 
-export function createComponent(
-    c: ComponentModel,
-    insert: (node: Node) => void,
-): { finalNode: Node; removeSelf: () => void } {
-    if (typeof c !== "object") {
-        let textNode = document.createTextNode("" + c);
-        insert(textNode);
-        window.onNodeUpdate(textNode);
-        return { finalNode: textNode, removeSelf: () => textNode.remove() };
-    }
-    if (isWatchable(c)) {
-        let finalNode = document.createTextNode(""); // nodes are inserted before this node
-        insert(finalNode);
-        let removalFunctions: (() => void)[] = [];
-        let o = 0;
-        let previousModel: ComponentModel | undefined;
-        let updateValue = (model: ComponentModel) => {
-            if (o++) console.log("UPDATE VALUE WAS CALLED BY WATCHABLE");
-            // check if the model is the same
-            if (previousModel && previousModel === model) return; // skip
-            previousModel = model;
-            // clear outdated nodes
-            removalFunctions.map(rf => rf());
-            removalFunctions = [];
-            // create new nodes
-            let { removeSelf } = createComponent(model, node =>
-                finalNode.parentNode!.insertBefore(node, finalNode),
-            );
-            removalFunctions.push(removeSelf);
-        };
-        let unwatch = c[watchable_watch](updateValue);
-        let currentModel = c[watchable_value]();
-        updateValue(currentModel);
-        window.onNodeUpdate(finalNode);
-        return {
-            finalNode,
-            removeSelf: () => {
-                unwatch();
-                finalNode.remove();
-                removalFunctions.map(rf => rf());
-            },
-        };
-    }
-    insert(c.node);
-    window.onNodeUpdate(c.node);
     return {
-        finalNode: c.node,
-        removeSelf: () => {
-            c.node.remove();
-            c.removeSelf();
+        [isExistingNode]: true,
+        createBefore(parent, ___afterOnce) {
+            if (isWatch(spec)) {
+                // OPTIMIZATION: if prev is text and next is text, just update node.nodeValue
+                let nodeAfter = document.createTextNode("");
+                parent.insertBefore(nodeAfter, ___afterOnce);
+
+                let nodeExists = true;
+
+                let prevUserNode: ExistingUserNodeSpec | undefined = undefined;
+                let prevNode: CreatedNodeSpec | undefined = undefined;
+                let onchange = () => {
+                    console.log("changed, updating", spec);
+                    if (!nodeExists) {
+                        console.log(
+                            "!!ERROR: Node updated after removal, even though the watcher was unregistered. This should never happen.!",
+                        );
+                        return;
+                    }
+                    // if equals previous value, do nothing
+                    let newUserNode = spec.$ref;
+                    if (prevUserNode === newUserNode) return; // nothing to do;
+                    // remove existing node
+                    if (prevNode) prevNode.removeSelf();
+                    // create real nodes
+                    let newNode = createNode(newUserNode);
+                    prevNode = newNode.createBefore(parent, nodeAfter);
+                };
+                let unregisterWatcher = spec.watch(onchange);
+                console.log("watching", spec);
+                setTimeout(() => onchange(), 0);
+                // it might be fine to onchange immediately;
+                // next tick might not be great for performance when inserting large trees
+
+                return {
+                    removeSelf: () => {
+                        // call removal handlers
+                        prevNode && prevNode.removeSelf();
+                        unregisterWatcher && unregisterWatcher();
+                        nodeExists = false;
+                        console.log("Node removing");
+                    },
+                };
+            }
+            if (typeof spec !== "object") {
+                let node = document.createTextNode("" + spec);
+                parent.insertBefore(node, ___afterOnce);
+
+                return {
+                    removeSelf: () => node.remove(),
+                    [isExistingNode]: true,
+                };
+            }
+            console.log("!err", spec);
+            throw new Error("invalid node spec: (see previous log)");
         },
     };
 }
 
-export const d = (
-    componentName: string | ((props: {}) => ExistingComponentModel),
-    props: {
-        [key: string]:
-            | string
-            | number
-            | ((...a: any[]) => void)
-            | Watchable<string | number | ((...a: any[]) => void)>;
-    },
-    ...children: ComponentModel[]
-): ExistingComponentModel => {
-    if (typeof componentName === "function") {
-        return componentName({ children, ...props });
-    }
-    let element = document.createElement(componentName);
-    let removalHandlers: (() => void)[] = [];
-    let nodeCreationHandler: Function | undefined;
-    if (props)
-        Object.keys(props).map(prop => {
-            if (prop === "nodecreated") {
-                nodeCreationHandler = props[prop] as Function;
-                return;
+export type NodeEvent<T extends NodeName> = {
+    currentTarget: NodeTypeMap[T];
+};
+
+export type BaseNodeAttributes<T extends NodeName> = {
+    class: string;
+    onClick: (e: MouseEvent & NodeEvent<T>) => void;
+    onMouseMove: (e: MouseEvent & NodeEvent<T>) => void;
+};
+
+export type NodeName = "div" | "input" | "button" | "span" | "ul" | "li";
+
+export type NodeTypeMap = {
+    div: HTMLDivElement;
+    input: HTMLInputElement;
+    button: HTMLButtonElement;
+    span: HTMLSpanElement;
+    ul: HTMLUListElement;
+    li: HTMLLIElement;
+};
+
+type NodeAttributesMap<T extends NodeName> = {
+    div: BaseNodeAttributes<T>;
+    button: BaseNodeAttributes<T>;
+    input: BaseNodeAttributes<T> & {
+        value: string;
+        type: string;
+        checked: boolean;
+        onInput: (e: Event & NodeEvent<T>) => void;
+    };
+    span: BaseNodeAttributes<T>;
+    ul: BaseNodeAttributes<T>;
+    li: BaseNodeAttributes<T>;
+};
+
+export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
+
+export function createHTMLNode<T extends NodeName>(
+    type: NodeName,
+    attrs: Partial<NodeAttributes<NodeName>>,
+    // ^ this requires every possible attribute to be predefined and does not allow for dynamically changing attributes. spread props might be complicated. for now, this is acceptable.
+    child: CreatableNodeSpec,
+): CreatableNodeSpec {
+    return {
+        [isExistingNode]: true,
+        createBefore(parent, ___afterOnce) {
+            let node = document.createElement(type);
+            parent.insertBefore(node, ___afterOnce);
+
+            if (isWatch(attrs)) {
+                throw new Error("rest attributes are not supported yet");
             }
-            let a: any = props[prop];
-            if (a[watchable_watch]) {
-                removalHandlers.push(
-                    a[watchable_watch]((v: any) => {
-                        if ((element as any)[prop] !== v)
-                            (element as any)[prop] = v;
-                        // notify prop update
-                        window.onNodeUpdate(element);
-                    }),
+
+            Object.entries(attrs).forEach(([key, value]) => {
+                if (isWatch(value)) {
+                    console.log("watchable attributes are not supported yet");
+                    return;
+                }
+                if (key.startsWith("on")) {
+                    let eventName = key.slice(2).toLowerCase();
+                    node.addEventListener(eventName, value as EventListener);
+                    return;
+                }
+                if (key === "style") {
+                    throw new Error(
+                        "setting styles in js is not supported yet",
+                    );
+                }
+                if (key === "children") {
+                    return; // skip
+                }
+                node.setAttribute(key, "" + value);
+            });
+
+            let createdChild = child.createBefore(node, null);
+
+            return {
+                removeSelf: () => {
+                    createdChild.removeSelf();
+                    node.remove();
+                },
+                [isExistingNode]: true,
+            };
+        },
+    };
+}
+
+export function createFragmentNode(
+    children: CreatableNodeSpec[],
+): CreatableNodeSpec {
+    return {
+        [isExistingNode]: true,
+        createBefore(parent, ___afterOnce) {
+            let nodeAfter = document.createTextNode("");
+            parent.insertBefore(nodeAfter, ___afterOnce);
+
+            let createdChildren = children.map(child => {
+                console.log(
+                    "fragment inserting",
+                    child,
+                    "into",
+                    parent,
+                    "before",
+                    nodeAfter,
                 );
-                let current = a[watchable_value]();
-                (element as any)[prop] = current;
-                return;
-            }
-            (element as any)[prop] = a;
-        });
-    if (children)
-        children.map(c => {
-            removalHandlers.push(
-                createComponent(c, node => element.appendChild(node))
-                    .removeSelf,
-            );
-        });
-    window.onNodeUpdate(element);
-    if (nodeCreationHandler) nodeCreationHandler(element); // maybe nodecreationhandler should return removal functions
-    return {
-        node: element,
-        removeSelf: () => removalHandlers.forEach(h => h()),
-    };
-    // children:map child addChild(...)
-    // props:map prop // find watch() functions (these can change props based on values changing)
-    // bind value changes to watch
-};
+                return child.createBefore(parent, nodeAfter);
+            });
 
-export let React = {
-    createElement: d,
-    Fragment: (props: { children?: ComponentModel[] }) => {
-        console.log("Creating fragment with", props);
-        return React.createElement(
-            "div",
-            {
-                className: "divspam",
-                nodecreated: node => (node.style.display = "contents"),
-            },
-            ...(props.children || [""]),
-        );
-    },
-};
-
-// type RealOrWatchable<T> = T | Watchable<T>;
-
-export function textNode(
-    v: string | Watchable<string>,
-): ExistingComponentModel {
-    let textValue = isWatchable(v) ? v[watchable_value]() : v;
-    let node = document.createTextNode(textValue);
-    let removalHandlers: (() => void)[] = [];
-    if (isWatchable(v)) {
-        removalHandlers.push(
-            v[watchable_watch](nv => {
-                if (node.nodeValue !== nv) node.nodeValue = nv;
-                window.onNodeUpdate(node);
-            }),
-        );
-    }
-    return {
-        node,
-        removeSelf: () => {
-            console.log("removing", removalHandlers);
-            removalHandlers.map(h => h());
+            return {
+                removeSelf: () => {
+                    // call removal handlers
+                    createdChildren.forEach(child => child.removeSelf());
+                },
+                [isExistingNode]: true,
+            };
         },
     };
 }
 
-export type RealOrWatchable<T> = T | Watchable<T>;
-
-export type OptionalProps<T> = { [key in keyof T]?: RealOrWatchable<T[key]> };
-
-export type TagNameToPropsMap = {
-    [elemName in keyof HTMLElementTagNameMap]: OptionalProps<
-        HTMLElementTagNameMap[elemName] & {
-            children: ComponentModel[] | ComponentModel;
-            nodecreated: (node: HTMLElementTagNameMap[elemName]) => void;
-        }
-    >;
-};
-
-declare global {
-    namespace JSX {
-        interface IntrinsicElements extends TagNameToPropsMap {}
-        interface Element extends ExistingComponentModel {}
-    }
-}
-
-export function ListRender<T>(
+export function createListRender<T>(
     list: List<T>,
-    cb: (item: T, symbol: symbol) => JSX.Element,
-) {
-    let baseNode = d("div", {});
-    let symbolToNodeAfterMap: { [key: string]: ChildNode } = {};
-    let removalHandlers: (() => void)[] = [];
-    list.forEach((item, symbol) => {
-        let resultElement = cb(item, symbol);
-        baseNode.node.appendChild(resultElement.node);
-        symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
-    });
-    removalHandlers.push(
-        list.onAdd((item, { before, symbol, after }) => {
-            if (symbolToNodeAfterMap[symbolKey(symbol)]) {
-                return;
-            }
-            let resultElement = cb((item as unknown) as T, symbol);
-            console.log(
-                "Found node. Going to insert before",
-                symbolToNodeAfterMap[symbolKey(after!)],
-            );
-            if (!after || !symbolToNodeAfterMap[symbolKey(after)])
-                baseNode.node.appendChild(resultElement.node);
-            else
-                baseNode.node.insertBefore(
-                    resultElement.node,
-                    symbolToNodeAfterMap[symbolKey(after)],
-                );
-            symbolToNodeAfterMap[symbolKey(symbol)] = resultElement.node;
-        }),
-    );
-    removalHandlers.push(
-        list.onRemove(({ before, symbol, after }) => {
-            let element = symbolToNodeAfterMap[symbolKey(symbol!)];
-            element.remove();
-        }),
-    );
-    let existingRemove = baseNode.removeSelf;
-    baseNode.removeSelf = () => {
-        existingRemove();
-        removalHandlers.forEach(rh => rh());
-    };
-    return baseNode;
-}
+    cb: (item: /*$*/ T, symbol: symbol) => JSX.Element,
+): CreatableNodeSpec {
+    return {
+        [isExistingNode]: true,
+        createBefore(parent, after) {
+            let finalNode = document.createTextNode("");
+            parent.insertBefore(finalNode, after);
 
-// TODO componentmodel is:
-// insert: (nodeAfter: Node) => {}
-// remove: () => {}
+            // let elementToNodeAfterMap = new Map<
+            //     T,
+            //     { nodeAfter: ChildNode; node: CreatedNodeSpec }
+            // >();
+            let elementToNodeAfterMap = new Map<
+                symbol,
+                { nodeAfter: ChildNode; node: CreatedNodeSpec }
+            >();
+            let removalHandlers: (() => void)[] = [];
+            list.forEach((item, symbol) => {
+                let resultElement = cb(item, symbol);
+                let nodeAfter = document.createTextNode("");
+                parent.insertBefore(nodeAfter, finalNode);
+                let createdNode = createNode(resultElement).createBefore(
+                    parent,
+                    nodeAfter,
+                );
+                elementToNodeAfterMap.set(symbol, {
+                    nodeAfter,
+                    node: createdNode,
+                });
+            });
+            removalHandlers.push(
+                list.onAdd((item, { before, symbol, after }) => {
+                    if (elementToNodeAfterMap.get(symbol)) {
+                        throw new Error(
+                            "was requested to insert an element that already has been inserted",
+                        );
+                    }
+                    let resultElement = createNode(
+                        cb((item as unknown) as T, symbol),
+                    ); // pretend item is a t when it's actually watchable. users need to put $
+                    let nodeAfter = document.createTextNode("");
+                    parent.insertBefore(
+                        nodeAfter,
+                        after
+                            ? elementToNodeAfterMap.get(after)?.nodeAfter ||
+                                  null
+                            : null,
+                    );
+                    let createdNode = resultElement.createBefore(
+                        parent,
+                        nodeAfter,
+                    );
+                    elementToNodeAfterMap.set(symbol, {
+                        nodeAfter,
+                        node: createdNode,
+                    });
+                }),
+            );
+            removalHandlers.push(
+                list.onRemove(({ before, symbol, after }) => {
+                    let element = elementToNodeAfterMap.get(symbol);
+                    if (!element)
+                        throw new Error(
+                            "was requested to remove an element that doesn't exist",
+                        );
+                    element.node.removeSelf();
+                    element.nodeAfter.remove();
+                }),
+            );
+            return {
+                removeSelf: () => {
+                    removalHandlers.forEach(rh => rh());
+                    elementToNodeAfterMap.forEach((value, key) => {
+                        value.node.removeSelf();
+                        value.nodeAfter.remove();
+                    });
+                },
+            };
+        },
+    };
+}

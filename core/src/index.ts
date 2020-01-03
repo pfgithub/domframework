@@ -1,2 +1,2 @@
-export { React, ListRender } from "./dom";
+export { React, ListRender, mount } from "./react";
 export { $, $bind, List } from "./watchable";
