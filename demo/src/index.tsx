@@ -81,6 +81,8 @@ type NestedT =
     | { a: NestedT; b: NestedT; text: string; counter: number }
     | undefined;
 
+let $globalCounter = 0;
+
 function NestedTest($o: NestedT) {
     return (
         <div>
@@ -93,6 +95,7 @@ function NestedTest($o: NestedT) {
                         onInput={e => ($o!.text = e.currentTarget.value)}
                     />
                     {NumberThing($o.counter || $bind)}
+                    {NumberThing($globalCounter || $bind)}
                     <ul>
                         <li>a: {NestedTest($o.a || $bind)}</li>
                         <li>b: {NestedTest($o.b || $bind)}</li>
