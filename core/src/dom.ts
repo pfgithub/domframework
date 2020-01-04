@@ -72,7 +72,7 @@ export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
                 };
                 let unregisterWatcher = spec.watch(onchange);
                 console.log("watching", spec);
-                setTimeout(() => onchange(), 0);
+                onchange();
                 // it might be fine to onchange immediately;
                 // next tick might not be great for performance when inserting large trees
 
