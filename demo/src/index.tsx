@@ -122,10 +122,7 @@ function NestedTest($o: NestedT) {
 let $nestedO: NestedT;
 mount(NestedTest($nestedO || $bind), document.body);
 
-mount(
-    ToggleView(() => NestedTest($nestedO || $bind)),
-    document.body,
-);
+mount(ToggleView(() => NestedTest($nestedO || $bind)), document.body);
 
 let $showSection = true;
 mount(
@@ -155,7 +152,7 @@ mount(
                 </button>
             </div>
         ) : (
-            <div></div>
+            <div />
         )}
     </div>,
     document.body,
@@ -164,6 +161,7 @@ mount(
 function TodoList($list: List<string>) {
     return (
         <div>
+            <div>StartTodoList</div>
             {ListRender($list, $item => (
                 <div>
                     Item:{" "}
@@ -175,6 +173,7 @@ function TodoList($list: List<string>) {
                 </div>
             ))}
             <button onClick={() => $list.push("hmm")}>+</button>
+            <div>EndTodoList</div>
         </div>
     );
 }

@@ -150,7 +150,7 @@ export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
 export function createHTMLNode<T extends NodeName>(
     type: NodeName,
     attrs: Partial<NodeAttributes<NodeName>>,
-    // ^ this requires every possible attribute to be predefined and does not allow for dynamically changing attributes. spread props might be complicated. for now, this is acceptable.
+    // ^ Watchable<Partial<NodeAttributes<NodeName>>>
     child: CreatableNodeSpec,
 ): CreatableNodeSpec {
     return {
@@ -276,8 +276,8 @@ export function createListRender<T>(
                         nodeAfter,
                         after
                             ? elementToNodeAfterMap.get(after)?.nodeAfter ||
-                                  null
-                            : null,
+                                  finalNode
+                            : finalNode,
                     );
                     let createdNode = resultElement.createBefore(
                         parent,
