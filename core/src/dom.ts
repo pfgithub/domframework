@@ -36,6 +36,12 @@ export type CreatableNodeSpec = {
 export type NodeSpec = CreatableNodeSpec | Watch<CreatableNodeSpec>;
 export type UserNodeSpec = ExistingUserNodeSpec | Watch<ExistingUserNodeSpec>;
 
+declare global {
+    interface Window {
+        onNodeUpdate: ((node: Node) => void) | undefined;
+    }
+}
+
 export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
     if (nodeIsExisting(spec)) {
         return spec; // already a node, no action to take
@@ -69,10 +75,13 @@ export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
                     // create real nodes
                     let newNode = createNode(newUserNode);
                     prevNode = newNode.createBefore(parent, nodeAfter);
+
+                    window.onNodeUpdate && window.onNodeUpdate(parent);
                 };
                 let unregisterWatcher = spec.watch(onchange);
                 console.log("watching", spec);
                 onchange();
+
                 // it might be fine to onchange immediately;
                 // next tick might not be great for performance when inserting large trees
 
