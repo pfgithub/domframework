@@ -148,7 +148,6 @@ export function createHTMLNode<T extends NodeName>(
         [isExistingNode]: true,
         createBefore(parent, ___afterOnce) {
             let node = document.createElement(type);
-            parent.insertBefore(node, ___afterOnce);
 
             if (isWatch(attrs)) {
                 throw new Error("rest attributes are not supported yet");
@@ -176,6 +175,7 @@ export function createHTMLNode<T extends NodeName>(
             });
 
             let createdChild = child.createBefore(node, null);
+            parent.insertBefore(node, ___afterOnce);
 
             return {
                 removeSelf: () => {
