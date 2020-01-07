@@ -1,4 +1,11 @@
-import { WatchableBase, isWatch, $, List } from "./watchable";
+import {
+    WatchableBase,
+    isWatch,
+    $,
+    List,
+    objectShallowDiff,
+    RemovalHandler,
+} from "./watchable";
 
 export type Watch<T> = WatchableBase<T>;
 // or WatchableDependencyList but why restrict it?
@@ -149,7 +156,7 @@ export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
 
 export function createHTMLNode<T extends NodeName>(
     type: NodeName,
-    attrs: Partial<NodeAttributes<NodeName>>,
+    attrs: Watch<Partial<NodeAttributes<NodeName>>>,
     // ^ Watchable<Partial<NodeAttributes<NodeName>>>
     child: CreatableNodeSpec,
 ): CreatableNodeSpec {
@@ -158,36 +165,79 @@ export function createHTMLNode<T extends NodeName>(
         createBefore(parent, ___afterOnce) {
             let node = document.createElement(type);
 
-            if (isWatch(attrs)) {
-                throw new Error("rest attributes are not supported yet");
-            }
+            // todo attrs deep watch
+            // if(rest attributes exist) {move all attributes to the rest attributes}
+            // or have the compiler convert rest attributes into __rest={}
+            // that sounds easier, let's do that
 
-            Object.entries(attrs).forEach(([key, value]) => {
-                if (isWatch(value)) {
-                    console.log("watchable attributes are not supported yet");
-                    return;
+            let prevAttrs: Partial<NodeAttributes<NodeName>> = {};
+            let eventHandlers = new Map<string, EventListener>();
+            let onchange = (attrs: Partial<NodeAttributes<NodeName>>) => {
+                let diff = objectShallowDiff(prevAttrs, attrs);
+                for (let [key, state] of diff) {
+                    if (state === "unchanged") continue;
+                    function getInfer<T>(
+                        object: { [key: string]: T },
+                        key: string,
+                    ) {
+                        return (attrs as any)[key] as T;
+                    }
+                    let value = getInfer(attrs, key);
+                    if (state === "removed") value = undefined;
+
+                    if (key.startsWith("on")) {
+                        // !!! TODO support {capture: true} and {passive: true} and maybe even default to passive
+                        let eventName = key.slice(2).toLowerCase();
+                        let prevHandler = eventHandlers.get(eventName);
+                        if (prevHandler) {
+                            if (prevHandler) {
+                                node.removeEventListener(
+                                    eventName,
+                                    prevHandler,
+                                );
+                            }
+                        }
+                        if (value !== undefined) {
+                            let listener = value as EventListener;
+                            eventHandlers.set(eventName, listener);
+                            node.addEventListener(eventName, listener);
+                        }
+                    } else if (key === "style") {
+                        throw new Error("setting style is not supported yet");
+                    } else if (key === "children") {
+                        if (state !== "added") {
+                            throw new Error(
+                                "children property cannot be changed in a real html node using the children attribute. pass an unchanging fragment instead that has children that change. (state was " +
+                                    state +
+                                    ")",
+                            );
+                        }
+                    } else if (key in node) {
+                        (node as any)[key] = value;
+                    } else {
+                        if (value === undefined) node.removeAttribute(key);
+                        else node.setAttribute(key, "" + value);
+                    }
                 }
-                if (key.startsWith("on")) {
-                    let eventName = key.slice(2).toLowerCase();
-                    node.addEventListener(eventName, value as EventListener);
-                    return;
-                }
-                if (key === "style") {
-                    throw new Error(
-                        "setting styles in js is not supported yet",
-                    );
-                }
-                if (key === "children") {
-                    return; // skip
-                }
-                node.setAttribute(key, "" + value);
-            });
+            };
+            let removeWatcher: RemovalHandler | undefined;
+            if (isWatch(attrs)) {
+                onchange(attrs.$ref);
+                removeWatcher = attrs.watch(() => onchange(attrs.$ref));
+            } else {
+                // unused but potential performance optimization
+                onchange(attrs);
+            }
+            // watchDeep doesn't make sense here because it's a watchable... maybe watchables should pipe both deep emits and normal ones
+            // that's a bad idea because deep emits a lot
+            // is it?
 
             let createdChild = child.createBefore(node, null);
             parent.insertBefore(node, ___afterOnce);
 
             return {
                 removeSelf: () => {
+                    removeWatcher && removeWatcher();
                     createdChild.removeSelf();
                     node.remove();
                 },

@@ -14,15 +14,17 @@ export const should_be_raw = Symbol("should be raw");
 
 export type RemovalHandler = (() => void) & { __isRemovalHandler: true };
 
+export type WatcherCB = () => void;
+
 export interface WatchableBase<T> {
     _setup?(): void;
     _teardown?(): void;
 }
 export abstract class WatchableBase<T> {
-    watchers: (() => void)[] = [];
+    watchers: WatcherCB[] = [];
     abstract get $ref(): T;
     abstract set $ref(v: T);
-    watch(watcher: () => void): RemovalHandler {
+    watch(watcher: WatcherCB, deep?: boolean): RemovalHandler {
         if (this.watchers.length === 0) {
             // setup
             this._setup && this._setup();
@@ -39,14 +41,13 @@ export abstract class WatchableBase<T> {
     emit() {
         console.log("emitting for watchers", this.watchers);
         this.watchers.forEach(w => w());
-        nextTick(() => this.watchers.forEach(w => w()));
     }
     get [is_watchable]() {
         return true;
     }
 }
 
-// !!!!!!!!!!!!!! possible memory leak: unused values need to be cleaned up when no one is watching them anymore
+// !!!!!!!!!!!!!! possible memory leak: unused fakewatchables need to be removed when no one is watching them anymore
 
 export class FakeWatchable extends WatchableBase<any> {
     thing: any;
@@ -68,7 +69,7 @@ export class FakeWatchable extends WatchableBase<any> {
     $get(v: string) {
         return new FakeWatchable(this.thing[v], this);
     }
-    watch(watcher: () => void) {
+    watch(watcher: WatcherCB) {
         return this.parent.watch(watcher);
     }
 }
@@ -170,7 +171,7 @@ type ListNode<T> = {
     self: WatchableThing<T>;
     symbol: symbol;
     next?: symbol;
-    removeSelf: () => void;
+    removeSelf: RemovalHandler;
 };
 
 export let symbolKey = (v: symbol): string => (v as unknown) as string;
@@ -244,7 +245,7 @@ export class List<T> {
             next: afterItemSymbol,
             self: watchableItem,
             symbol: thisItemSymbol,
-            removeSelf: () => {},
+            removeSelf: (() => {}) as RemovalHandler,
         };
 
         if (beforeItem) {
@@ -387,3 +388,48 @@ export function isWatch<T>(v: T | WatchableBase<T>): v is WatchableBase<T> {
 // export interface Watchable {
 //     watch(v: () => void): () => void; // watch(watcher) returns unwatcher
 // }
+
+export function objectShallowDiff(
+    prev: { [key: string]: any },
+    curr: { [key: string]: any },
+) {
+    let propertyChangeMap = new Map<
+        string,
+        {
+            state: "removed" | "added" | "changed" | "unchanged";
+            value: any;
+        }
+    >();
+    Object.entries(curr).forEach(([key, value]) => {
+        propertyChangeMap.set(key, { state: "added", value });
+    });
+    Object.entries(prev).forEach(([key, value]) => {
+        let cm = propertyChangeMap.get(key);
+        if (cm) {
+            if (cm.value === value) cm.state = "unchanged";
+            else cm.state = "changed";
+        } else {
+            propertyChangeMap.set(key, {
+                state: "removed",
+                value: undefined,
+            });
+        }
+    });
+    let resultMap = new Map<
+        string,
+        "removed" | "added" | "changed" | "unchanged"
+    >();
+    // it might be nice to return propertyChangeMap directly but that would require lots of typescript stuff so that this function knows the types of the objects
+    for (let [key, value] of propertyChangeMap) {
+        resultMap.set(key, value.state);
+    }
+    return resultMap;
+}
+
+console.log(
+    "@@@ SHALLOW DIFF TEST:::",
+    objectShallowDiff(
+        { a: "removed", b: "changed", c: "unchanged" },
+        { b: "changed-", c: "unchanged", d: "addedd" },
+    ),
+);
