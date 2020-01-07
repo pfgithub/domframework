@@ -1,4 +1,16 @@
 /*
+// TODO:
+
+rest attributes:
+< {...{}} => __rest={{}} >
+
+check if an object is actually watchable before doing .get() chains
+$a.s = 5;
+current: $a.get("s").ref = 5;
+should be: ($a.watchable ? $a.get().ref : $a.s)
+or maybe not
+don't do this ^^
+
 ----------- CASES TO HANDLE
 
 (as discovered)

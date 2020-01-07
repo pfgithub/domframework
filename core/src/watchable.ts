@@ -41,6 +41,7 @@ export abstract class WatchableBase<T> {
     emit() {
         console.log("emitting for watchers", this.watchers);
         this.watchers.forEach(w => w());
+        // nextTick(() => this.watchers.forEach(w => w()));
     }
     get [is_watchable]() {
         return true;
@@ -74,6 +75,7 @@ export class FakeWatchable extends WatchableBase<any> {
     }
 }
 
+// TODO deep emit. things that watch should short circuit quickly so it *shouldn't* be a performance issue.
 export class WatchableThing<T> extends WatchableBase<T> {
     private __v!: any;
     isUnused: boolean;
@@ -352,7 +354,7 @@ export class WatchableDependencyList<T> extends WatchableBase<T> {
             this.removalHandlers.push(
                 item.watch(() => {
                     console.log("item watch emitted");
-                    this.emit();
+                    nextTick(() => this.emit()); // !!! remove this
                 }),
             ),
         );
@@ -381,8 +383,11 @@ export const $ = {
     },
 };
 
-export function isWatch<T>(v: T | WatchableBase<T>): v is WatchableBase<T> {
-    return !!(v as any)[is_watchable];
+export function isWatch<T>(
+    v: undefined | null | T | WatchableBase<T>,
+): v is WatchableBase<T> {
+    // return v == null ? false : !!(v as any)[is_watchable];
+    return v instanceof WatchableBase;
 }
 
 // export interface Watchable {
@@ -426,10 +431,10 @@ export function objectShallowDiff(
     return resultMap;
 }
 
-console.log(
-    "@@@ SHALLOW DIFF TEST:::",
-    objectShallowDiff(
-        { a: "removed", b: "changed", c: "unchanged" },
-        { b: "changed-", c: "unchanged", d: "addedd" },
-    ),
-);
+// console.log(
+//     "@@@ SHALLOW DIFF TEST:::",
+//     objectShallowDiff(
+//         { a: "removed", b: "changed", c: "unchanged" },
+//         { b: "changed-", c: "unchanged", d: "addedd" },
+//     ),
+// );
