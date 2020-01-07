@@ -344,9 +344,7 @@ export function createListRender<T>(
             removalHandlers.push(
                 list.onAdd((item, { before, symbol, after }) => {
                     if (elementToNodeAfterMap.get(symbol)) {
-                        throw new Error(
-                            "was requested to insert an element that already has been inserted",
-                        );
+                        return; // onadd happens a tick delayed for performance (so that list .insert is fast in case lots of list manipulations are being done at once).
                     }
                     let resultElement = createNode(
                         cb((item as unknown) as T, symbol),

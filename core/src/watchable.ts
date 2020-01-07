@@ -40,8 +40,8 @@ export abstract class WatchableBase<T> {
     }
     emit() {
         console.log("emitting for watchers", this.watchers);
-        this.watchers.forEach(w => w());
-        // nextTick(() => this.watchers.forEach(w => w()));
+        // this.watchers.forEach(w => w());
+        nextTick(() => this.watchers.forEach(w => w()));
     }
     get [is_watchable]() {
         return true;
