@@ -200,7 +200,13 @@ module.exports.default = function({ types: t, template }) {
                     path => path.node.__dmf_prefix,
                 );
                 if (!prefixNode) return;
-                throw new Error("Spread attributes are not supported yet");
+                // throw new Error("Spread attributes are not supported yet");
+                path.replaceWith(
+                    t.jsxAttribute(
+                        t.jSXIdentifier("dmfRest"),
+                        t.jSXExpressionContainer(path.node.argument),
+                    ),
+                );
             },
             Directive(path) {
                 if (

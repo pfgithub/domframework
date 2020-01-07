@@ -125,10 +125,12 @@ export type BaseNodeAttributes<T extends NodeName> = {
     class: string;
     onClick: (e: MouseEvent & NodeEvent<T>) => void;
     onMouseMove: (e: MouseEvent & NodeEvent<T>) => void;
-    __rest: Watch<NodeAttributes<T>>;
+    onKeyPress: (e: KeyboardEvent & NodeEvent<T>) => void;
+    dmfOnMount: (node: NodeTypeMap[T]) => void;
+    dmfRest: Watch<NodeAttributes<T>>;
 };
 
-export type NodeName = "div" | "input" | "button" | "span" | "ul" | "li";
+export type NodeName = "div" | "input" | "button" | "span" | "ul" | "li" | "h1";
 
 export type NodeTypeMap = {
     div: HTMLDivElement;
@@ -137,6 +139,7 @@ export type NodeTypeMap = {
     span: HTMLSpanElement;
     ul: HTMLUListElement;
     li: HTMLLIElement;
+    h1: HTMLHeadingElement;
 };
 
 type NodeAttributesMap<T extends NodeName> = {
@@ -147,10 +150,12 @@ type NodeAttributesMap<T extends NodeName> = {
         type: string;
         checked: boolean;
         onInput: (e: Event & NodeEvent<T>) => void;
+        placeholder: string;
     };
     span: BaseNodeAttributes<T>;
     ul: BaseNodeAttributes<T>;
     li: BaseNodeAttributes<T>;
+    h1: BaseNodeAttributes<T>;
 };
 
 export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
@@ -171,7 +176,7 @@ export function createHTMLNode<T extends NodeName>(
         createBefore(parent, ___afterOnce) {
             let node = document.createElement(type);
 
-            // !!! TODO:: attrs is a normal (not watchable) object containing __rest which is a watchable object. when __rest changes, objectShallowDiff is used to choose what updates.
+            // !!! TODO:: attrs is a normal (not watchable) object containing dmfRest which is a watchable object. when dmfRest changes, objectShallowDiff is used to choose what updates.
 
             let prevAttrs: Partial<NodeAttributes<NodeName>> = {};
             let eventHandlers = new Map<string, EventListener>();
@@ -226,6 +231,8 @@ export function createHTMLNode<T extends NodeName>(
                     }
                 } else if (key === "style") {
                     throw new Error("setting style is not supported yet");
+                } else if (key === "dmfOnMount") {
+                    (value as any)(node);
                 } else if (key in node) {
                     (node as any)[key] = value;
                 } else {
@@ -255,11 +262,17 @@ export function createHTMLNode<T extends NodeName>(
             };
             let removeWatcher: RemovalHandler | undefined;
 
-            onchange(attrs);
-            if (attrs.__rest) {
-                removeWatcher = attrs.__rest.watch(() =>
-                    onchange(attrs.__rest!.$ref),
-                );
+            if (attrs.dmfRest) {
+                if (isWatch(attrs.dmfRest)) {
+                    onchange({ ...attrs, ...attrs.dmfRest!.$ref });
+                    removeWatcher = attrs.dmfRest.watch(() => {
+                        onchange({ ...attrs, ...attrs.dmfRest!.$ref });
+                    });
+                } else {
+                    onchange({ ...attrs, ...(attrs.dmfRest as any) });
+                }
+            } else {
+                onchange(attrs);
             }
 
             let createdChild = child.createBefore(node, null);

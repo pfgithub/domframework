@@ -3,6 +3,7 @@
 import { React, ListRender, $, $bind, List, mount } from "dmf";
 
 import "./drawBoxAroundElement";
+import { TodoListApp } from "./TodoList";
 
 $;
 React;
@@ -125,7 +126,10 @@ function NestedTest($o: NestedT) {
 let $nestedO: NestedT;
 mount(NestedTest($nestedO || $bind), document.body);
 
-mount(ToggleView(() => NestedTest($nestedO || $bind)), document.body);
+mount(
+    ToggleView(() => NestedTest($nestedO || $bind)),
+    document.body,
+);
 
 let $showSection = true;
 mount(
@@ -217,3 +221,5 @@ function NodeTestThing($list: List<NodeType>) {
 let $listTest = $.list<NodeType>([]);
 mount(NodeTestThing($listTest || $bind), document.body);
 mount(NodeTestThing($listTest || $bind), document.body);
+
+mount(<div>---RealTodoList:{TodoListApp()}</div>, document.body);

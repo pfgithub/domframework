@@ -43,8 +43,12 @@ export const React = {
         console.log("creating component using finalprops", finalProps);
         return componentCreator(finalProps);
     },
-    Fragment: (props: { children?: JSX.Element[] }) => {
-        let children = props.children || [];
+    Fragment: (props: { children?: JSX.Element[] | JSX.Element }) => {
+        let children = Array.isArray(props.children)
+            ? props.children
+            : props.children == null
+            ? []
+            : [props.children];
         return dom.createFragmentNode(
             children.map(child => {
                 return dom.createNode(child);
