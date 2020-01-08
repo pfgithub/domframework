@@ -329,6 +329,9 @@ export class List<T> {
     get length(): number {
         return (this.__length as unknown) as number;
     }
+    toJSON() {
+        return this.array();
+    }
 }
 
 type WDLCallback<T> = (

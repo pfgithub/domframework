@@ -1,5 +1,6 @@
 style things:
-- add a random thing to the class
+
+-   add a random thing to the class
 
 p.realclassname.randomid
 
@@ -17,11 +18,13 @@ on create, button will have a .create.fjknfdsalnkdf class for the length of the 
 
 typescript types
 
-what if watchables have a special type, T & {____watchable}
+what if watchables have a special type, T & {\_\_\_\_watchable}
 
 ```
-let $playing = false; 
+let $playing = false;
 $playing || $onchange(() => {
 	// called when $playing changes
 })
 ```
+
+switch to observables: I don't want Observable.from() everywhere but it might solve issues with maps and arrays and using random types

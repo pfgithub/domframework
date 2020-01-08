@@ -425,10 +425,12 @@ module.exports.default = function({ types: t, template }) {
                         return;
                     }
 
+                    // this thing doesn't account for the possability of multiple
+
                     // !!! todo move these out for better performance
-                    // also if("a" === "b") is false...
+                    // this won't cache values in the else side and will recreate them every time...
                     let ifTemplate = template(`
-                        if(!!____curr.%%index%% === !!____prev.ref.%%index%%){
+                        if(____curr.%%index%% && ____prev.ref.%%index%%){
                             if(____saved) {
                                 console.log("Skipping because saved value", ____saved.ref)
                                 return ____saved.ref;

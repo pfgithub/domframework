@@ -24,7 +24,10 @@ let q: () => {
 
 export type primitive = string | number | boolean | bigint | null | undefined;
 
-export type ExistingUserNodeSpec = primitive | CreatableNodeSpec;
+export type ExistingUserNodeSpec =
+    | primitive
+    | CreatableNodeSpec
+    | UserNodeSpec[];
 
 const isExistingNode = Symbol("is_existing_node");
 let nodeIsExisting = (node: UserNodeSpec): node is NodeSpec =>
@@ -52,6 +55,9 @@ declare global {
 export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
     if (nodeIsExisting(spec)) {
         return spec; // already a node, no action to take
+    }
+    if (Array.isArray(spec)) {
+        return createFragmentNode(spec.map(it => createNode(it)));
     }
 
     return {
@@ -145,6 +151,7 @@ export type NodeName =
     | "h1"
     | "pre"
     | "code"
+    | "label"
     | "textarea";
 
 export type NodeTypeMap = {
@@ -157,6 +164,7 @@ export type NodeTypeMap = {
     h1: HTMLHeadingElement;
     pre: HTMLPreElement;
     code: HTMLElement;
+    label: HTMLLabelElement;
     textarea: HTMLTextAreaElement;
 };
 
@@ -165,6 +173,7 @@ type NodeAttributesMap<T extends NodeName> = {
     button: BaseNodeAttributes<T>;
     input: BaseNodeAttributes<T> & {
         value: string;
+        step: "any";
         type: string;
         checked: boolean;
         onInput: (e: Event & NodeEvent<T>) => void;
@@ -176,6 +185,7 @@ type NodeAttributesMap<T extends NodeName> = {
     h1: BaseNodeAttributes<T>;
     pre: BaseNodeAttributes<T>;
     code: BaseNodeAttributes<T>;
+    label: BaseNodeAttributes<T>;
     textarea: BaseNodeAttributes<T> & {
         rows: number;
         columns: number;

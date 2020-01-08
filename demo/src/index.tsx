@@ -8,9 +8,13 @@ import { TodoListApp } from "./TodoList";
 $;
 React;
 
+import ClickerEditor from "./ClickerEditor";
+
 let $num = 5;
 let $x = 0;
 let $y = 0;
+
+mount(ClickerEditor(), document.body);
 
 function ToggleView(children: () => JSX.Element) {
     let $isVisible = true;
