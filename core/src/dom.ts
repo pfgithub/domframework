@@ -340,19 +340,21 @@ export function createListRender<T>(
             // >();
             let elementToNodeAfterMap = new Map<
                 symbol,
-                { nodeAfter: ChildNode; node: CreatedNodeSpec }
+                { nodeBefore: ChildNode; node: CreatedNodeSpec }
             >();
             let removalHandlers: (() => void)[] = [];
             list.forEach((item, symbol) => {
                 let resultElement = cb(item, symbol);
                 let nodeAfter = document.createTextNode("");
+                let nodeBefore = document.createTextNode("");
                 parent.insertBefore(nodeAfter, finalNode);
+                parent.insertBefore(nodeBefore, nodeAfter);
                 let createdNode = createNode(resultElement).createBefore(
                     parent,
                     nodeAfter,
                 );
                 elementToNodeAfterMap.set(symbol, {
-                    nodeAfter,
+                    nodeBefore,
                     node: createdNode,
                 });
             });
@@ -365,19 +367,27 @@ export function createListRender<T>(
                         cb((item as unknown) as T, symbol),
                     ); // pretend item is a t when it's actually watchable. users need to put $
                     let nodeAfter = document.createTextNode("");
+                    let nodeBefore = document.createTextNode("");
+                    console.log(
+                        ";:onadd was called to insert after",
+                        after,
+                        "(value)",
+                        elementToNodeAfterMap.get(after!),
+                    );
                     parent.insertBefore(
                         nodeAfter,
                         after
-                            ? elementToNodeAfterMap.get(after)?.nodeAfter ||
+                            ? elementToNodeAfterMap.get(after)?.nodeBefore ||
                                   finalNode
                             : finalNode,
                     );
+                    parent.insertBefore(nodeBefore, nodeAfter);
                     let createdNode = resultElement.createBefore(
                         parent,
                         nodeAfter,
                     );
                     elementToNodeAfterMap.set(symbol, {
-                        nodeAfter,
+                        nodeBefore,
                         node: createdNode,
                     });
                 }),
@@ -390,7 +400,7 @@ export function createListRender<T>(
                             "was requested to remove an element that doesn't exist",
                         );
                     element.node.removeSelf();
-                    element.nodeAfter.remove();
+                    element.nodeBefore.remove();
                 }),
             );
             return {
@@ -398,7 +408,7 @@ export function createListRender<T>(
                     removalHandlers.forEach(rh => rh());
                     elementToNodeAfterMap.forEach((value, key) => {
                         value.node.removeSelf();
-                        value.nodeAfter.remove();
+                        value.nodeBefore.remove();
                     });
                 },
             };
