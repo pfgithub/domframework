@@ -77,6 +77,7 @@ export function createNode(spec: UserNodeSpec): CreatableNodeSpec {
                     // if equals previous value, do nothing
                     let newUserNode = spec.$ref;
                     if (prevUserNode === newUserNode) return; // nothing to do;
+                    prevUserNode = newUserNode;
                     // remove existing node
                     if (prevNode) prevNode.removeSelf();
                     // create real nodes

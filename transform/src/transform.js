@@ -420,8 +420,10 @@ module.exports.default = function({ types: t, template }) {
                         return;
                     }
 
+                    // !!! todo move these out for better performance
+                    // also if("a" === "b") is false...
                     let ifTemplate = template(`
-                        if(____curr.%%index%% === ____prev.ref.%%index%%){
+                        if(!!____curr.%%index%% === !!____prev.ref.%%index%%){
                             if(____saved) {
                                 console.log("Skipping because saved value", ____saved.ref)
                                 return ____saved.ref;

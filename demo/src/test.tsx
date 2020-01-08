@@ -1,3 +1,5 @@
+"dmf prefix $";
+
 import { React, ListRender, $, $bind, List, mount } from "dmf";
 
 import "./drawBoxAroundElement";
@@ -5,24 +7,25 @@ import "./drawBoxAroundElement";
 $;
 React;
 
-{
-    let countingNumber = $.createWatchable(0);
-    mount(
-        <div>
-            Counter is at:{" "}
-            {$.watch([countingNumber], () => {
-                console.log("watch emitted.");
-                return countingNumber.$ref;
-            })}
-            .{" "}
-            <button
-                onClick={() => {
-                    countingNumber.$ref++;
-                }}
-            >
-                Increase
-            </button>
-        </div>,
-        document.body,
-    );
-}
+let $text = "initial";
+
+/*
+$text || $onchange(() => {
+	console.log("changed");
+})
+*/
+
+mount(
+    <>
+        <input value={$text} onInput={e => ($text = e.currentTarget.value)} />
+        {$text ? (
+            <input
+                value={$text}
+                onInput={e => ($text = e.currentTarget.value)}
+            />
+        ) : (
+            "type some text to show"
+        )}
+    </>,
+    document.body,
+);
