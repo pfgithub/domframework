@@ -4,7 +4,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const ProgressBarPlugin = require("progress-bar-webpack-plugin");
 
 module.exports = {
-    entry: "./src/index.tsx",
+    entry: "./src/rxjs-testing.tsx",
     devtool: "inline-source-map",
     mode: "development",
     module: {

@@ -29,6 +29,8 @@
         "webpack-cli": "^3.3.6"
     },
     "dependencies": {
-        "dmf": "../core"
+        "dmf": "../core",
+        "rxjs": "^6.5.4",
+        "rxjs-observe": "^2.1.5"
     }
 }
