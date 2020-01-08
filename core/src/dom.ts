@@ -122,16 +122,30 @@ export type NodeEvent<T extends NodeName> = {
     currentTarget: NodeTypeMap[T];
 };
 
+export type CSSStyle = any;
+
 export type BaseNodeAttributes<T extends NodeName> = {
     class: string;
     onClick: (e: MouseEvent & NodeEvent<T>) => void;
     onMouseMove: (e: MouseEvent & NodeEvent<T>) => void;
     onKeyPress: (e: KeyboardEvent & NodeEvent<T>) => void;
+    onBlur: (e: FocusEvent & NodeEvent<T>) => void;
     dmfOnMount: (node: NodeTypeMap[T]) => void;
     dmfRest: Watch<NodeAttributes<T>>;
+    style: CSSStyle;
 };
 
-export type NodeName = "div" | "input" | "button" | "span" | "ul" | "li" | "h1";
+export type NodeName =
+    | "div"
+    | "input"
+    | "button"
+    | "span"
+    | "ul"
+    | "li"
+    | "h1"
+    | "pre"
+    | "code"
+    | "textarea";
 
 export type NodeTypeMap = {
     div: HTMLDivElement;
@@ -141,6 +155,9 @@ export type NodeTypeMap = {
     ul: HTMLUListElement;
     li: HTMLLIElement;
     h1: HTMLHeadingElement;
+    pre: HTMLPreElement;
+    code: HTMLElement;
+    textarea: HTMLTextAreaElement;
 };
 
 type NodeAttributesMap<T extends NodeName> = {
@@ -157,6 +174,14 @@ type NodeAttributesMap<T extends NodeName> = {
     ul: BaseNodeAttributes<T>;
     li: BaseNodeAttributes<T>;
     h1: BaseNodeAttributes<T>;
+    pre: BaseNodeAttributes<T>;
+    code: BaseNodeAttributes<T>;
+    textarea: BaseNodeAttributes<T> & {
+        rows: number;
+        columns: number;
+        value: string;
+        onInput: (e: Event & NodeEvent<T>) => void;
+    };
 };
 
 export type NodeAttributes<T extends NodeName> = NodeAttributesMap<T>[T];
