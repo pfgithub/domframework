@@ -369,6 +369,11 @@ module.exports.default = function({ types: t, template }) {
                         element.__do_not_ref = true;
                 });
             },
+            /* !!! TODO
+            LabeledStatement:
+            
+            anything past this should get condensed into return <>{ watch(... ... aaa) }</>
+            */
             JSXExpressionContainer: {
                 exit(path) {
                     if (

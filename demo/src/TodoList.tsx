@@ -50,6 +50,7 @@ function TodoList($list: List<TodoItem>) {
                     })}
                 </li>
                 {ListRender($list, ($item, symbol) => {
+                    console.log("rendering", $item, "for listrender");
                     let $showRemoveConfirm = false;
                     return (
                         <>

@@ -208,6 +208,7 @@ export function createHTMLNode<T extends NodeName>(
                             setAttributeNotWatchable(key, resv as any);
                         }),
                     );
+                    setAttributeNotWatchable(key, value.$ref as any);
                     return;
                 }
                 setAttributeNotWatchable(key, value);
