@@ -345,7 +345,37 @@ export default function ClickerEditor() {
     let $update = 0; // once deep events are used, this won't be needed
     return (
         <div>
-            <textarea value={"" + $update && JSON.stringify($items)} />
+            <textarea
+                value={
+                    "" + $update &&
+                    JSON.stringify(
+                        JSON.parse(JSON.stringify($items)).map((v: any) => {
+                            if (v.type === "counter")
+                                return [v.type, v.name, v.description];
+                            if (v.type === "button") {
+                                let fix = (name: string) => {
+                                    if (v.data[name]) {
+                                        let reso: {
+                                            [key: string]: number;
+                                        } = {};
+                                        for (let det of v.data[name]) {
+                                            if (!reso[det.resource])
+                                                reso[det.resource] = 0;
+                                            reso[det.resource] += +det.cost;
+                                        }
+                                        v.data[name] = reso;
+                                    }
+                                };
+                                fix("requirements");
+                                fix("effects");
+                                fix("price");
+                                return [v.type, v.data];
+                            }
+                            return [v.type];
+                        }),
+                    )
+                }
+            />
             <div>
                 <button onClick={() => $update++}>update</button>
             </div>

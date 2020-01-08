@@ -1,3 +1,6 @@
+// try rxjs combined with this dom framework and no transformer?
+// rxjs only has one dependency but it seems pretty big
+
 // goals:
 
 // easy to compile (1 babel plugin) + functional style like react jsx
@@ -10,22 +13,26 @@
 ```tsx
 "dmf prefix $";
 
-function WebDataLoader(){
+function WebDataLoader() {
     let $website = ""; // $ means watchable. you can see when the value changes.
-    let $webData: WebData = {state: "waiting"}; 
+    let $webData: WebData = { state: "waiting" };
     // everything below here ends up in watchable
-    if($webData.state === "ready"){
+    if ($webData.state === "ready") {
         return WebDataDisplay(webData);
     }
-    $webData || $change(() => {
-        // wben $webData changes, this is called. Useful sometimes.
-    });
+    $webData ||
+        $change(() => {
+            // wben $webData changes, this is called. Useful sometimes.
+        });
     $: $c = $webData + ""; // when inputs change (webData), $c changes // (from svelte)
     let label1 = uniqid();
-    return <>
-        <label for={label1}>url</label>: <input id={label1} type="text" bind={$website} />
-        <MyInputComponent $website={$website} />
-    </>;
+    return (
+        <>
+            <label for={label1}>url</label>:{" "}
+            <input id={label1} type="text" bind={$website} />
+            <MyInputComponent $website={$website} />
+        </>
+    );
     // $property = two way bind, property = one way bind
     // instead of a={$a} setA={v => $a = v} (because that's slow), do two way bind instead
     // but it isn't slow
@@ -33,11 +40,9 @@ function WebDataLoader(){
     // having bind makes it more clear that that is what is expected though
     // (and you write less code)
 }
-
 ```
 
 // most useful output (without regard for feasability)
-
 
 outcome:
 
@@ -58,11 +63,7 @@ add $ bound properties
 
 
 */
-
 ```
-
-
-
 
 lists:::
 
@@ -70,14 +71,13 @@ lists:::
 
 dmf:
 O(nlogn) sorting
-O(  n  ) filtering
-O(  1  ) adding, modifying, removing an item
+O( n ) filtering
+O( 1 ) adding, modifying, removing an item
 
 vs react:
 O(nlogn) sorting
-O(  n  ) filtering
-O(  n  ) adding, modifying, removing an item
-
+O( n ) filtering
+O( n ) adding, modifying, removing an item
 
 ```
 
@@ -99,22 +99,19 @@ function Component(props: {$value: v}){
 
 ```
 
-
 ```tsx
-
 // items should have to be watchable at every step ::
 
-let $o = {$c: "test", $d: "test"};
+let $o = { $c: "test", $d: "test" };
 
-$o.$c.toString() // $o.get("$c").ref.toString()
-$o.$d // $o.get("$d").ref
-
+$o.$c.toString(); // $o.get("$c").ref.toString()
+$o.$d; // $o.get("$d").ref
 ```
 
 ```ts
 
 // real fragments should be possible
-// nodes should return              
+// nodes should return
 let q: () => { nodes: Node[], insertBefore: (parent: ChildNode, before: ChildNode) => void }
 // the mounter should call back to the node
 // with the node after
@@ -163,7 +160,7 @@ export let React = {
     },
     createElement(name: string, props: {}, ...children: (UserNodeSpec[]) | Watch<UserNodeSpec[])[]>){
         let parentNode = document.createElement(name);
-        
+
         let removalHandlers = [];
 
         // attributes (fun)
@@ -196,7 +193,7 @@ export let React = {
             }else{
                 onch(childv);
             }
-            
+
         })
 
         return {
@@ -213,5 +210,3 @@ export let React = {
 // / / // / / // / / // / / // / / //
 
 ```
-
-
