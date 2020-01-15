@@ -1,2 +1,6 @@
 export { React, ListRender, mount } from "./react";
-export { $, $bind, List } from "./watchable";
+export { $, List } from "./watchable";
+export let $Component: never[] = [];
+($Component as any).__on = (fn: any) => {
+    fn.__isComponent = true;
+};
