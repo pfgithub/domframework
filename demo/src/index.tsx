@@ -1,6 +1,6 @@
 "dmf prefix $";
 
-import { React, ListRender, $, $bind, List, mount } from "dmf";
+import { React, ListRender, $, $bind, List, mount, Portal } from "dmf";
 
 import "./drawBoxAroundElement";
 import { TodoListApp } from "./TodoList";
@@ -31,6 +31,32 @@ function ToggleView(children: () => JSX.Element) {
         </div>
     );
 }
+
+let portalResult = document.createElement("div");
+let startResult = document.createTextNode("---start portal---");
+let endResult = document.createTextNode("---end portal---");
+portalResult.appendChild(startResult);
+portalResult.appendChild(endResult);
+document.body.appendChild(portalResult);
+
+mount(
+    <div>
+        {ToggleView(() =>
+            Portal(
+                <div>
+                    hi! this node was made inside a portal! it even has a
+                    toggleview:{" "}
+                    {ToggleView(() => (
+                        <div>Here's the content!</div>
+                    ))}
+                </div>,
+                portalResult,
+                endResult,
+            ),
+        )}
+    </div>,
+    document.body,
+);
 
 mount(
     <div>

@@ -359,6 +359,26 @@ export function createFragmentNode(
     };
 }
 
+export function createPortal<T>(
+    node: CreatableNodeSpec,
+    portalTo: Node,
+    insertBefore: ChildNode | null,
+): CreatableNodeSpec {
+    return {
+        [isExistingNode]: true,
+        createBefore(_parent, ___afterOnce) {
+            let insertedNode = node.createBefore(portalTo, insertBefore);
+
+            return {
+                removeSelf: () => {
+                    insertedNode.removeSelf();
+                },
+                [isExistingNode]: true,
+            };
+        },
+    };
+}
+
 export function createListRender<T>(
     list: List<T>,
     cb: (item: /*$*/ T, symbol: symbol) => JSX.Element,

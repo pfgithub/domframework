@@ -72,3 +72,11 @@ export function mount(element: JSX.Element, parent: Node) {
 }
 
 export const ListRender = dom.createListRender;
+
+export function Portal(
+    node: JSX.Element,
+    portalTo: Node,
+    insertBefore: ChildNode | null = null,
+) {
+    return dom.createPortal(dom.createNode(node), portalTo, insertBefore);
+}
