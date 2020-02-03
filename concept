@@ -1,0 +1,44 @@
+$Component
+function Loader(){
+   $Init
+
+   $Update
+   
+
+}
+
+wait if there is a difference between init and update why not
+
+
+function Loader () {
+   let $a = 5;
+   let $b = 6;
+
+   $Component
+   return () => {
+
+
+   }
+
+}
+
+and have that transform
+
+what about
+
+
+
+
+function Loader () {
+   let $a = 5;
+   let $b = 6;
+
+   $Component; {
+
+
+   }
+
+}
+
+that looks nice
+obv would need some prettier changes
