@@ -25,7 +25,7 @@ type ClickerSpecItem =
       };
 
 function SelectList<T>(choices: [string, T][], $value: T) {
-    let choiceDataMap = new Map<string, T>();
+    const choiceDataMap = new Map<string, T>();
     let currentChoice = choices[0][0];
     return (
         <span>
@@ -225,7 +225,7 @@ function ItemEditor($item: ClickerSpecItem, removeSelf: () => void) {
 }
 
 export default function ClickerEditor() {
-    let $items = $.list<ClickerSpecItem>([
+    const $items = $.list<ClickerSpecItem>([
         {
             type: "counter",
             name: "achivement",
@@ -353,12 +353,12 @@ export default function ClickerEditor() {
                             if (v.type === "counter")
                                 return [v.type, v.name, v.description];
                             if (v.type === "button") {
-                                let fix = (name: string) => {
+                                const fix = (name: string) => {
                                     if (v.data[name]) {
-                                        let reso: {
+                                        const reso: {
                                             [key: string]: number;
                                         } = {};
-                                        for (let det of v.data[name]) {
+                                        for (const det of v.data[name]) {
                                             if (!reso[det.resource])
                                                 reso[det.resource] = 0;
                                             reso[det.resource] += +det.cost;

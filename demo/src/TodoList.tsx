@@ -24,7 +24,7 @@ function ManagedTextInput(
 
 function TodoList($list: List<TodoItem>) {
     let $wipItem = "";
-    let $filter = "";
+    const $filter = "";
     let thisShouldFocus = false;
     return (
         <>
@@ -54,7 +54,7 @@ function TodoList($list: List<TodoItem>) {
                     let $showRemoveConfirm = false;
                     return (
                         <>
-                            {$item.contents.indexOf($filter) > -1 ? (
+                            {$item.contents.includes($filter) ? (
                                 <li>
                                     <input
                                         type="checkbox"
@@ -133,8 +133,8 @@ function TodoList($list: List<TodoItem>) {
 }
 
 export function TodoListApp() {
-    let $list: List<TodoItem> = $.list([]);
-    let $listOfTodoLists: List<0> = $.list([0]);
+    const $list: List<TodoItem> = $.list([]);
+    const $listOfTodoLists: List<0> = $.list([0]);
     return (
         <>
             {ListRender($listOfTodoLists, ($item, symbol) => {

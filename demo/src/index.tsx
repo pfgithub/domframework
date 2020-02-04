@@ -10,7 +10,7 @@ React;
 
 import ClickerEditor from "./ClickerEditor";
 
-let $num = 5;
+const $num = 5;
 let $x = 0;
 let $y = 0;
 
@@ -32,9 +32,9 @@ function ToggleView(children: () => JSX.Element) {
     );
 }
 
-let portalResult = document.createElement("div");
-let startResult = document.createTextNode("---start portal---");
-let endResult = document.createTextNode("---end portal---");
+const portalResult = document.createElement("div");
+const startResult = document.createTextNode("---start portal---");
+const endResult = document.createTextNode("---end portal---");
 portalResult.appendChild(startResult);
 portalResult.appendChild(endResult);
 document.body.appendChild(portalResult);
@@ -112,7 +112,7 @@ type NestedT =
     | { a: NestedT; b: NestedT; text: string; counter: number }
     | undefined;
 
-let $globalCounter = 0;
+const $globalCounter = 0;
 
 function NestedTest($o: NestedT) {
     return (
@@ -215,7 +215,7 @@ function TodoList($list: List<string>) {
     );
 }
 
-let $list = $.list(["hi"]);
+const $list = $.list(["hi"]);
 mount(TodoList($list || $bind), document.body);
 mount(TodoList($list || $bind), document.body);
 
@@ -248,7 +248,7 @@ function NodeTestThing($list: List<NodeType>) {
     );
 }
 
-let $listTest = $.list<NodeType>([]);
+const $listTest = $.list<NodeType>([]);
 mount(NodeTestThing($listTest || $bind), document.body);
 mount(NodeTestThing($listTest || $bind), document.body);
 
