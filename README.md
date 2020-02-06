@@ -28,15 +28,18 @@
 | svelte    | no :)       | no :( (html template)       | no :(              |
 | vue       | yes :(      | no :( (html template)       | kind of :~         |
 | aurelia   | no :)       | no :( (class+html template) | kind of :~         |
-| hyperhtml | kind of :(  | yes :) (many choices)       | kind of :~         |
+| hyperhtml | kind of :~  | yes :) (many choices)       | kind of :~         |
+| imba      | no :)       | sure? :)                    | no :(              |
 
 -   svelte has issues open for partial :~ and full :) typescript support. [partial support issue](https://github.com/sveltejs/svelte/issues/1639) [full support issue](https://github.com/sveltejs/svelte/issues/3677)
 -   vue has typescript support in javascipt code but not in html templates
 -   aurelia has typescript support in javascript code but not in html templates
--   while not using virtual dom by the standard definition, hyper html still uses a diffing based approach to rerendering components combined with the added overhead of parsing html. changing a textnode like in [this example](https://webreflection.github.io/hyperHTML/test/tick.html) requires diffing the h1 and h2 even though only the textnode is changing.
+-   while not using virtual dom, hyperhtml still requires a lot of code to run when updating a small number of nodes in deep nested component trees. this is significantly better for performance than virtual dom. [more](https://viperhtml.js.org/hyperhtml/documentation/#introduction-1).
 -   hyper html has typescript support in javascript but not in template string attribute values
 
 ### why does virtual dom matter
+
+reconciliation - updating the dom to match your data - needs to be fast for small updates that are far up on the tree.
 
 if every time you clicked a plus on a counter, the entire application was .replaceChild()ed with a new application, that would be terrible for performance. virtual dom does that, except the replaceChild only happens in code. the entire application is recreated as lightweight objects and then the objects are compared with the real html to minimize the actual dom updates required. unfortunately, as apps get bigger, recreating the entire application gets slow. even though dom changes are minimized, the app still runs slowly because creating thousands of lightweight objects starts to actually take time.
 
