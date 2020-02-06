@@ -20,10 +20,13 @@
 -   go to demo and `yarn serve`
 -   go to . and run the fish script `onchange (for file in (find . -type f -not -path '*node_modules*' -not -path '*.git*' -not -path './junk*'); git check-ignore $file -q; if test $status -eq 0; else; echo $file; end; end && echo "Ready" 1>&2) -- prettier --write '{{changed}}'` or set up prettier in your editor on save or on commit
 
-### similar projects
+### about
+
+dmf is yet another javascript framework and there is nothing particularily special or interesting about it except that it gets :) for all three things in the table below:
 
 | project   | virtual dom | functional component style  | typescript support |
 | --------- | ----------- | --------------------------- | ------------------ |
+| dmf | no :) | yes :) | yes :) |
 | react     | yes :(      | yes :)                      | yes :)             |
 | svelte    | no :)       | no :( (html template)       | no :(              |
 | vue       | yes :(      | no :( (html template)       | kind of :~         |
@@ -62,3 +65,7 @@ code complexity
 -   [react "best practices"]() - good
 -   [hyperhtml rerender entire app]() - good
 -   [dmf best practices]() - good
+
+### downsides
+
+weird reactive stuff behind the scenes. requires a babel plugin to compile. weird code.
