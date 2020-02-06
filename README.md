@@ -26,13 +26,13 @@ dmf is yet another javascript framework and there is nothing particularily speci
 
 | project   | virtual dom | functional component style  | typescript support |
 | --------- | ----------- | --------------------------- | ------------------ |
-| dmf | no :) | yes :) | yes :) |
+| dmf       | no :)       | yes :)                      | yes :)             |
 | react     | yes :(      | yes :)                      | yes :)             |
 | svelte    | no :)       | no :( (html template)       | no :(              |
 | vue       | yes :(      | no :( (html template)       | kind of :~         |
 | aurelia   | no :)       | no :( (class+html template) | kind of :~         |
 | hyperhtml | kind of :~  | yes :) (many choices)       | kind of :~         |
-| imba      | no :)       | sure? :)                    | no :(              |
+| imba      | kind of :~  | sure? :)                    | no :(              |
 
 -   svelte has issues open for partial :~ and full :) typescript support. [partial support issue](https://github.com/sveltejs/svelte/issues/1639) [full support issue](https://github.com/sveltejs/svelte/issues/3677)
 -   vue has typescript support in javascipt code but not in html templates
