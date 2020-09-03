@@ -1,6 +1,6 @@
 This project was some attempts to use a babel transformer to make reactive stuff idk.
 
-# abandoned in favor of [uilang](https://)
+# abandoned in favor of [uilang](https://github.com/pfgithub/uilang)
 
 reasons:
 
