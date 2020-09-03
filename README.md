@@ -8,6 +8,8 @@ reasons:
 - there are a lot of things I don't like about js
 - why not
 
+# weird messy testing page of the stuff I had: http://pfg.pw/domframework/
+
 ---
 
 ## development setup:
@@ -57,26 +59,6 @@ dmf is yet another javascript framework and there is nothing particularily speci
 reconciliation - updating the dom to match your data - needs to be fast for small updates that are far up on the tree.
 
 if every time you clicked a plus on a counter, the entire application was .replaceChild()ed with a new application, that would be terrible for performance. virtual dom does that, except the replaceChild only happens in code. the entire application is recreated as lightweight objects and then the objects are compared with the real html to minimize the actual dom updates required. unfortunately, as apps get bigger, recreating the entire application gets slow. even though dom changes are minimized, the app still runs slowly because creating thousands of lightweight objects starts to actually take time.
-
-### performance comparison
-
--   [vanillajs replacechild entire app]() - slowest
--   [react hooks no performance optimization]() - slow
--   [react "best practices"]() - slow
--   [hyperhtml rerender entire app]() - slow
--   [react with performance optimization]() - fast
--   [dmf best practices]() - fast
--   [vanillajs only change what is necessary]() - fastest
-
-code complexity
-
--   [vanillajs only change what is necessary]() - worst
--   [react with performance optimization]() - bad
--   [vanillajs replacechild entire app]() - good
--   [react hooks no performance optimization]() - good
--   [react "best practices"]() - good
--   [hyperhtml rerender entire app]() - good
--   [dmf best practices]() - good
 
 ### downsides
 
