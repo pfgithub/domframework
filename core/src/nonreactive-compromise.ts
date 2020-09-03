@@ -1,0 +1,1 @@
+// use caching like lit-html and that one language but provide good typechecking and hooks-like components by default
