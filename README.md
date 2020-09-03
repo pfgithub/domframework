@@ -1,3 +1,15 @@
+This project was some attempts to use a babel transformer to make reactive stuff idk.
+
+# abandoned in favor of [uilang](https://)
+
+reasons:
+
+- js isn't designed for what I'm trying to do
+- there are a lot of things I don't like about js
+- why not
+
+---
+
 ## development setup:
 
 ### initial:
