@@ -1,14 +1,17 @@
 This project was some attempts to use a babel transformer to make reactive stuff idk.
 
-# abandoned in favor of [uilang](https://github.com/pfgithub/uilang)
+# abandoned in favour of [solid](https://github.com/solidjs/solid)
 
-reasons:
+solid does what I was trying to do but got one key thing right that I was missing
 
-- js isn't designed for what I'm trying to do
-- there are a lot of things I don't like about js
-- why not
+- my project was attempting to know at compiletime if something was 'watchable' which requires
+  annotating variables to state that they might change and stuff
+- solid instead watches for function calls to know what needs to be watched. `<span>{count() + 5}</span>` - it knows
+  to re-evaluate this expression when count changes because the first time when count() was called it saved that
+  it may change.
+- this works 1000× better than my messy attempt with `$` prefixing and also has proper types in typescript
 
-# weird messy testing page of the stuff I had: http://pfg.pw/domframework/
+## weird messy testing page of the stuff I had: http://pfg.pw/domframework/
 
 ---
 
